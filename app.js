@@ -32,19 +32,21 @@ app.use(express.urlencoded({ extended: true }));
 /* ════════════════════════════════════════
    SESSION  (PostgreSQL-backed)
 ════════════════════════════════════════ */
+app.set('trust proxy', 1); // 👈 اتأكد إن السطر ده موجود فوق الـ Session على طول (موجود عندك)
+
 app.use(session({
   store: new pgSession({
     pool,
     tableName: 'user_sessions',
     createTableIfMissing: true,
   }),
-  secret:            process.env.SESSION_SECRET,
-  resave:            false,
+  secret: process.env.SESSION_SECRET, // 👈 اتأكد إنك ضايف المتغير ده في Vercel Environment Variables
+  resave: false,
   saveUninitialized: false,
   cookie: {
-    secure:   process.env.NODE_ENV === 'production',
+    secure: 'auto', // 👈 غيرها من (process.env.NODE_ENV === 'production') لـ 'auto'
     httpOnly: true,
-    maxAge:   7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 }));
 
