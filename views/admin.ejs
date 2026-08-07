@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — Daftari POS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <%
+    const _stores  = stores || [];
+    const _now15   = new Date(Date.now() - 15*60*1000);
+    const _total   = _stores.length;
+    const _active  = _stores.filter(s=>s.status==='active').length;
+    const _trial   = _stores.filter(s=>s.status==='trial').length;
+    const _pending = _stores.filter(s=>s.status==='pending').length;
+    const _expired = _stores.filter(s=>s.status==='expired').length;
+    const _life    = _stores.filter(s=>s.status==='lifetime').length;
+    const _onlineN = _stores.filter(s=>s.last_seen&&new Date(s.last_seen)>_now15).length;
+  %>
+  <style>
+    :root{
+      --brand:#4F70E8;--brand-dark:#3655C5;--brand-glow:rgba(79,112,232,.24);
+      --emerald:#0ECB81;--rose:#F43F5E;--amber:#F5A623;--violet:#8B5CF6;--sky:#38BDF8;
+      --bg:#060C19;--surface:#0A1422;--elevated:#0D1B2E;--input:#0C1828;
+      --border:#172637;--border-h:#253F5C;
+      --text:#EEF2FF;--text-sec:#8FA3BF;--text-muted:#456080;
+      --wa:#25D366;--wa-glow:rgba(37,211,102,.35);
+      --radius:12px;--radius-sm:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;}
+    html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+    /* ── WA Config Bar ── */
+    .wa-bar{background:rgba(37,211,102,.06);border-bottom:1px solid rgba(37,211,102,.15);padding:.55rem 2rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .wa-bar i.bi-whatsapp{color:var(--wa);font-size:18px;}
+    .wa-lbl{font-size:.76rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+    .wa-num{font-family:'JetBrains Mono',monospace;font-size:.88rem;font-weight:600;color:var(--wa);}
+    .btn-wa-sm{padding:4px 10px;border-radius:6px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;}
+    .btn-wa-copy{background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);color:var(--wa);}
+    .btn-wa-copy:hover{background:rgba(37,211,102,.2);}
+    .btn-wa-edit{background:rgba(25,43,66,.5);border:1px solid var(--border);color:var(--text-sec);}
+    .btn-wa-edit:hover{background:rgba(25,43,66,.9);}
+
+    /* ── Admin Navbar ── */
+    .admin-nav{position:sticky;top:0;z-index:200;height:62px;background:rgba(10,20,34,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;}
+    .admin-brand{display:flex;align-items:center;gap:12px;}
+    .admin-mark{width:38px;height:38px;background:linear-gradient(135deg,#E8504F,#A0221C);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 0 14px rgba(232,80,79,.3);}
+    .a-tag{font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--rose);}
+    .a-name{font-size:1rem;font-weight:800;letter-spacing:-.3px;}
+    .a-name em{font-style:normal;color:var(--brand);}
+    .nav-meta{display:flex;align-items:center;gap:10px;}
+    .nav-who{display:flex;align-items:center;gap:8px;padding:6px 13px;background:rgba(25,43,66,.5);border:1px solid var(--border);border-radius:8px;font-size:.8rem;color:var(--text-sec);}
+    .nav-who i{color:var(--brand);}
+    .btn-logout{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.22);border-radius:8px;color:var(--rose);font-size:.8rem;font-weight:600;text-decoration:none;transition:background .15s;}
+    .btn-logout:hover{background:rgba(244,63,94,.16);color:var(--rose);}
+
+    /* ── Main ── */
+    .admin-main{padding:2rem 2rem 3rem;max-width:1500px;margin:0 auto;}
+    .page-title{font-size:1.5rem;font-weight:800;letter-spacing:-.5px;}
+    .page-sub{font-size:.83rem;color:var(--text-sec);margin-top:3px;}
+
+    /* ════ FINANCIAL STATS CARDS ════ */
+    .fin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.4rem;display:flex;align-items:center;gap:1.1rem;transition:border-color .2s,transform .2s;cursor:default;}
+    .fin-card:hover{border-color:var(--border-h);transform:translateY(-2px);}
+    .fin-ic{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+    .ic-amber{background:rgba(245,166,35,.1);color:var(--amber);}
+    .ic-brand{background:rgba(79,112,232,.1);color:var(--brand);}
+    .ic-rose {background:rgba(244,63,94,.1); color:var(--rose);}
+    .ic-emerald{background:rgba(14,203,129,.1);color:var(--emerald);}
+    .fin-label{font-size:.7rem;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+    .fin-value{font-size:1.7rem;font-weight:800;letter-spacing:-.5px;font-family:'JetBrains Mono',monospace;line-height:1;}
+    .fv-amber{color:var(--amber);} .fv-brand{color:var(--brand);} .fv-rose{color:var(--rose);} .fv-emerald{color:var(--emerald);}
+    .fin-sub{font-size:.7rem;color:var(--text-muted);margin-top:4px;}
+
+    /* ── Enforce Overdue Button ── */
+    .btn-enforce{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);border-radius:var(--radius-sm);color:var(--rose);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;}
+    .btn-enforce:hover{background:rgba(244,63,94,.2);}
+
+    /* ── Platform Summary Pills ── */
+    .stats-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;}
+    .sp{display:flex;align-items:center;gap:8px;padding:8px 15px;background:var(--surface);border:1px solid var(--border);border-radius:50px;font-size:.8rem;font-weight:500;color:var(--text-sec);cursor:default;transition:border-color .2s;}
+    .sp:hover{border-color:var(--border-h);}
+    .sp .sv{font-size:1.05rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+    .sp-total .sv{color:var(--brand);} .sp-active .sv{color:var(--emerald);} .sp-trial .sv{color:var(--amber);}
+    .sp-pend .sv{color:var(--sky);} .sp-exp .sv{color:var(--rose);} .sp-life .sv{color:var(--violet);} .sp-online .sv{color:var(--emerald);}
+    .sp-dot{width:7px;height:7px;border-radius:50%;}
+    .sp-active .sp-dot{background:var(--emerald);} .sp-trial .sp-dot{background:var(--amber);}
+    .sp-pend .sp-dot{background:var(--sky);} .sp-exp .sp-dot{background:var(--rose);}
+    .sp-life .sp-dot{background:var(--violet);} .sp-online .sp-dot{background:var(--emerald);animation:blink 1.5s ease-in-out infinite;}
+    @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+    /* ── Table Card ── */
+    .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+    .table-card-hdr{padding:.9rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .table-card-title{font-size:.9rem;font-weight:700;}
+    .table-card-sub{font-size:.74rem;color:var(--text-muted);}
+    .ctable{width:100%;border-collapse:collapse;min-width:1000px;}
+    .ctable thead tr{background:rgba(13,27,46,.7);}
+    .ctable thead th{padding:.7rem .9rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    .ctable tbody tr{border-bottom:1px solid rgba(23,38,55,.7);transition:background .12s;}
+    .ctable tbody tr:hover{background:rgba(13,27,46,.65);}
+    .ctable tbody tr:last-child{border-bottom:none;}
+    .ctable tbody td{padding:.8rem .9rem;font-size:.83rem;vertical-align:middle;}
+    .td-store-name{font-weight:600;font-size:.88rem!important;}
+    .td-email{font-size:.74rem!important;color:var(--text-muted)!important;display:block;margin-top:1px;}
+
+    /* Status Badges */
+    .sb{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:50px;font-size:.68rem;font-weight:700;white-space:nowrap;}
+    .sb::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;}
+    .sb-active  {background:rgba(14,203,129,.1); color:#0ECB81; border:1px solid rgba(14,203,129,.22);} .sb-active::before{background:#0ECB81;}
+    .sb-trial   {background:rgba(245,166,35,.1);  color:#F5A623; border:1px solid rgba(245,166,35,.22);} .sb-trial::before{background:#F5A623;}
+    .sb-pending {background:rgba(56,189,248,.1);  color:#38BDF8; border:1px solid rgba(56,189,248,.22);} .sb-pending::before{background:#38BDF8;}
+    .sb-expired {background:rgba(244,63,94,.1);   color:#F43F5E; border:1px solid rgba(244,63,94,.22);} .sb-expired::before{background:#F43F5E;}
+    .sb-lifetime{background:rgba(139,92,246,.1);  color:#8B5CF6; border:1px solid rgba(139,92,246,.22);} .sb-lifetime::before{background:#8B5CF6;}
+    /* Payment badges */
+    .sb-paid    {background:rgba(14,203,129,.1);  color:#0ECB81; border:1px solid rgba(14,203,129,.22);}
+    .sb-unpaid  {background:rgba(245,166,35,.1);  color:#F5A623; border:1px solid rgba(245,166,35,.22);}
+    .sb-overdue {background:rgba(244,63,94,.1);   color:#F43F5E; border:1px solid rgba(244,63,94,.22);}
+
+    /* Online Indicator */
+    .online-wrap{display:flex;align-items:center;gap:5px;font-size:.74rem;}
+    .online-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    .dot-on{background:var(--emerald);box-shadow:0 0 6px rgba(14,203,129,.6);animation:blink 1.5s ease-in-out infinite;}
+    .dot-off{background:var(--text-muted);}
+
+    /* Expiry date */
+    .sed-ok  {font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--text-sec);}
+    .sed-soon{font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--amber);font-weight:600;}
+    .sed-past{font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--rose);font-weight:600;}
+    .sed-none{font-size:.74rem;color:var(--text-muted);}
+
+    /* Action Buttons */
+    .store-actions{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+    .btn-a{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:7px;border:1px solid;font-size:.71rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .14s,transform .1s;white-space:nowrap;}
+    .btn-a:hover:not(:disabled){transform:translateY(-1px);}
+    .btn-a:active:not(:disabled){transform:scale(.93);}
+    .btn-activate {background:rgba(14,203,129,.09);border-color:rgba(14,203,129,.25);color:#0ECB81;}
+    .btn-trial-s  {background:rgba(245,166,35,.09);border-color:rgba(245,166,35,.25);color:#F5A623;}
+    .btn-expire   {background:rgba(244,63,94,.08); border-color:rgba(244,63,94,.22); color:#F43F5E;}
+    .btn-lifetime {background:rgba(139,92,246,.09);border-color:rgba(139,92,246,.25);color:#8B5CF6;}
+    .btn-extend   {background:rgba(79,112,232,.1); border-color:rgba(79,112,232,.25);color:#93ADFF;}
+    .btn-notify   {background:rgba(56,189,248,.09);border-color:rgba(56,189,248,.22);color:#38BDF8;}
+    .btn-pay      {background:rgba(14,203,129,.09);border-color:rgba(14,203,129,.25);color:#0ECB81;}
+    .btn-del-store{background:rgba(244,63,94,.08); border-color:rgba(244,63,94,.2);  color:#F43F5E;}
+    .action-sep{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;}
+    .btn-spin{display:inline-block;width:10px;height:10px;border:1.5px solid rgba(255,255,255,.3);border-top-color:currentColor;border-radius:50%;animation:spin .65s linear infinite;display:none;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── New Store Button ── */
+    .btn-new-store{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,var(--emerald),#08A466);border:none;border-radius:var(--radius-sm);color:#fff;font-size:.86rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:transform .14s,box-shadow .2s;box-shadow:0 4px 16px rgba(14,203,129,.3);}
+    .btn-new-store:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(14,203,129,.45);}
+
+    /* ── Modals ── */
+    .modal-content.m-dark{background:var(--elevated);border:1px solid var(--border-h);color:var(--text);}
+    .modal-content.m-dark .modal-header{border-bottom:1px solid var(--border);padding:1rem 1.35rem;}
+    .modal-content.m-dark .modal-title{font-size:.93rem;font-weight:700;}
+    .modal-content.m-dark .modal-body{padding:1.25rem 1.35rem;}
+    .modal-content.m-dark .modal-footer{border-top:1px solid var(--border);padding:.85rem 1.35rem;gap:7px;}
+    .mf{margin-bottom:.9rem;}
+    .mf label{display:block;font-size:.72rem;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+    .mf input,.mf select,.mf textarea{width:100%;background:var(--input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:.875rem;font-family:'Inter',sans-serif;color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s;}
+    .mf input:focus,.mf select:focus,.mf textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-glow);}
+    .mf input::placeholder,.mf textarea::placeholder{color:var(--text-muted);}
+    .mf select option{background:var(--elevated);}
+    .modal-meta{background:rgba(25,43,66,.4);border:1px solid var(--border);border-radius:9px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--text-sec);}
+    .modal-meta strong{color:var(--text);}
+    .preset-days{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.9rem;}
+    .preset-btn{padding:5px 13px;background:rgba(79,112,232,.1);border:1px solid rgba(79,112,232,.22);border-radius:20px;color:#93ADFF;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .14s;}
+    .preset-btn:hover{background:rgba(79,112,232,.22);}
+    .extend-preview{background:rgba(14,203,129,.07);border:1px solid rgba(14,203,129,.18);border-radius:9px;padding:.75rem 1rem;font-size:.8rem;color:var(--text-sec);margin-top:.75rem;}
+    .extend-preview strong{color:var(--emerald);font-family:'JetBrains Mono',monospace;}
+    /* Payment amount presets */
+    .pay-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.9rem;}
+    .pay-preset{padding:5px 13px;background:rgba(14,203,129,.08);border:1px solid rgba(14,203,129,.2);border-radius:20px;color:#0ECB81;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',sans-serif;transition:background .14s;}
+    .pay-preset:hover{background:rgba(14,203,129,.18);}
+    /* Credentials box */
+    .cs-success-box{background:rgba(14,203,129,.06);border:1px solid rgba(14,203,129,.22);border-radius:10px;padding:1.1rem 1.2rem;margin-top:.25rem;}
+    .cs-success-hdr{display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:700;color:var(--emerald);margin-bottom:.9rem;}
+    .cs-cred-row{display:flex;align-items:center;gap:8px;margin-bottom:.55rem;flex-wrap:wrap;}
+    .cs-cred-lbl{font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;width:68px;flex-shrink:0;}
+    .cs-cred-val{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text);background:rgba(25,43,66,.6);border:1px solid var(--border);border-radius:6px;padding:4px 10px;flex:1;word-break:break-all;}
+    .cs-copy-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(79,112,232,.1);border:1px solid rgba(79,112,232,.25);border-radius:6px;color:#93ADFF;font-size:.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;flex-shrink:0;}
+    .cs-note{font-size:.75rem;color:var(--amber);margin-top:.75rem;margin-bottom:0;display:flex;align-items:flex-start;gap:6px;line-height:1.5;}
+    .pw-gen-wrap{display:flex;gap:6px;} .pw-gen-wrap input{flex:1;}
+    .pw-field-wrap{position:relative;flex:1;}
+    .pw-field-wrap input{padding-right:34px;}
+    .pw-copy-btn{position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:14px;cursor:pointer;padding:4px;transition:color .15s;}
+    .btn-gen-pw{padding:10px 13px;background:rgba(79,112,232,.12);border:1px solid rgba(79,112,232,.28);border-radius:var(--radius-sm);color:#93ADFF;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;white-space:nowrap;}
+    .btn-gen-pw:hover{background:rgba(79,112,232,.22);}
+    .btn-m-cancel{padding:9px 17px;background:rgba(25,43,66,.6);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-sec);font-size:.82rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;}
+    .btn-m-cancel:hover{background:rgba(25,43,66,.9);}
+    .btn-m-ok{padding:9px 17px;border:none;border-radius:var(--radius-sm);color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:transform .14s,box-shadow .2s;}
+    .btn-m-ok:hover:not(:disabled){transform:translateY(-1px);}
+    .btn-m-ok:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .btn-m-ok.blue{background:linear-gradient(135deg,var(--brand),var(--brand-dark));}
+    .btn-m-ok.green{background:linear-gradient(135deg,var(--emerald),#08A466);}
+    .btn-m-ok.sky{background:linear-gradient(135deg,#0EA5E9,#0369A1);}
+    .btn-m-ok.red{background:linear-gradient(135deg,var(--rose),#9F1239);}
+    .spin-ring{display:none;width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;}
+
+    /* ── Toast ── */
+    #toastShelf{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9900;display:flex;flex-direction:column;gap:8px;width:min(360px,calc(100vw - 2.5rem));}
+    .toast-card{position:relative;overflow:hidden;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);background:#0D1B2E;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.6);}
+    .tc-bar{position:absolute;top:0;left:0;width:3px;height:100%;}
+    .tc-s .tc-bar{background:var(--emerald);} .tc-e .tc-bar{background:var(--rose);} .tc-i .tc-bar{background:var(--brand);} .tc-w .tc-bar{background:var(--amber);}
+    .tc-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+    .tc-s .tc-icon{color:var(--emerald);} .tc-e .tc-icon{color:var(--rose);} .tc-i .tc-icon{color:#93ADFF;} .tc-w .tc-icon{color:var(--amber);}
+    .tc-body{flex:1;min-width:0;} .tc-title{font-size:.82rem;font-weight:600;color:var(--text);} .tc-msg{font-size:.78rem;color:var(--text-sec);margin-top:2px;line-height:1.45;}
+    .tc-close{background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s;}
+    .tc-close:hover{color:var(--text-sec);}
+
+    .empty-state{text-align:center;padding:3rem 1rem!important;}
+    .empty-state i{font-size:2.8rem;color:var(--border-h);display:block;margin-bottom:.75rem;}
+    .empty-state p{color:var(--text-sec);font-size:.875rem;margin:0;}
+    @media(max-width:768px){.admin-main{padding:1.25rem 1rem 2.5rem;} .nav-who{display:none;}}
+    @media(prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+  </style>
+</head>
+<body>
+
+  <div id="toastShelf" role="log" aria-live="polite"></div>
+
+  <%# ── WhatsApp Config Bar ── %>
+  <div class="wa-bar">
+    <i class="bi bi-whatsapp"></i>
+    <span class="wa-lbl">Support:</span>
+    <span class="wa-num" id="waNumDisplay"><%= whatsappNumber || 'Not set' %></span>
+    <button class="btn-wa-sm btn-wa-copy" onclick="copyWaNum()"><i class="bi bi-clipboard me-1"></i>Copy</button>
+    <button class="btn-wa-sm btn-wa-edit" data-bs-toggle="modal" data-bs-target="#waConfigModal"><i class="bi bi-pencil-fill me-1"></i>Edit</button>
+    <a href="https://wa.me/<%= (whatsappNumber||'').replace(/\D/g,'') %>" target="_blank" rel="noopener"
+       style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);border-radius:6px;color:var(--wa);font-size:.72rem;font-weight:600;text-decoration:none;">
+      <i class="bi bi-box-arrow-up-right"></i> Open WhatsApp
+    </a>
+  </div>
+
+  <%# ── Admin Navbar ── %>
+  <nav class="admin-nav">
+    <div class="admin-brand">
+      <div class="admin-mark"><i class="bi bi-shield-fill-check"></i></div>
+      <div><div class="a-tag">Super Admin</div><div class="a-name">Daftari<em>POS</em> &rsaquo; Control Panel</div></div>
+    </div>
+    <div class="nav-meta">
+      <div class="nav-who"><i class="bi bi-person-fill-gear"></i><span><%= adminName %></span></div>
+      <a href="/logout" class="btn-logout"><i class="bi bi-box-arrow-right"></i> Sign Out</a>
+    </div>
+  </nav>
+
+  <main class="admin-main">
+
+    <%# ── Page Header ── %>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.75rem">
+      <div>
+        <h1 class="page-title">Control Panel <span style="color:var(--text-muted);font-size:1rem;font-weight:400">(<%= _total %> stores)</span></h1>
+        <p class="page-sub">Manage subscriptions, billing, notifications, and live store activity.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn-enforce" onclick="enforceOverdue(this)" id="enforceBtn">
+          <i class="bi bi-shield-exclamation"></i> Enforce Overdue Now
+        </button>
+        <button type="button" class="btn-new-store" data-bs-toggle="modal" data-bs-target="#createStoreModal">
+          <i class="bi bi-person-plus-fill"></i> New Store Account
+        </button>
+      </div>
+    </div>
+
+    <%# ════ FINANCIAL STATS CARDS ════ %>
+    <div class="row g-3 mb-4" id="finRow">
+      <div class="col-6 col-lg-3">
+        <div class="fin-card">
+          <div class="fin-ic ic-amber"><i class="bi bi-graph-up-arrow"></i></div>
+          <div>
+            <div class="fin-label">Total Revenue</div>
+            <div class="fin-value fv-amber">$<%= finStats.totalRevenue %></div>
+            <div class="fin-sub"><%= finStats.totalPayments %> payments recorded</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="fin-card">
+          <div class="fin-ic ic-brand"><i class="bi bi-calendar-month-fill"></i></div>
+          <div>
+            <div class="fin-label">This Month</div>
+            <div class="fin-value fv-brand">$<%= finStats.monthlyRevenue %></div>
+            <div class="fin-sub"><%= new Date().toLocaleString('en',{month:'long',year:'numeric'}) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="fin-card">
+          <div class="fin-ic" style="background:rgba(245,166,35,.1);color:var(--amber)"><i class="bi bi-hourglass-split"></i></div>
+          <div>
+            <div class="fin-label">Pending Payments</div>
+            <div class="fin-value" style="color:var(--amber)"><%= finStats.pendingCount %></div>
+            <div class="fin-sub">Stores awaiting payment</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="fin-card">
+          <div class="fin-ic ic-rose"><i class="bi bi-exclamation-triangle-fill"></i></div>
+          <div>
+            <div class="fin-label">Overdue Accounts</div>
+            <div class="fin-value fv-rose"><%= finStats.overdueCount %></div>
+            <div class="fin-sub">Payment due date passed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# ── Platform Summary Pills ── %>
+    <div class="stats-pills" id="statsPills">
+      <div class="sp sp-total"> <i class="bi bi-buildings-fill" style="color:var(--brand)"></i><span class="sv" id="cnt-total"><%= _total %></span><span>Total</span></div>
+      <div class="sp sp-active"><span class="sp-dot"></span><span class="sv" id="cnt-active"><%= _active %></span><span>Active</span></div>
+      <div class="sp sp-trial"> <span class="sp-dot"></span><span class="sv" id="cnt-trial"><%= _trial %></span><span>Trial</span></div>
+      <div class="sp sp-pend">  <span class="sp-dot"></span><span class="sv" id="cnt-pend"><%= _pending %></span><span>Pending</span></div>
+      <div class="sp sp-exp">   <span class="sp-dot"></span><span class="sv" id="cnt-exp"><%= _expired %></span><span>Expired</span></div>
+      <div class="sp sp-life">  <span class="sp-dot"></span><span class="sv" id="cnt-life"><%= _life %></span><span>Lifetime</span></div>
+      <div class="sp sp-online"><span class="sp-dot"></span><span class="sv" id="cnt-online"><%= _onlineN %></span><span>Online Now</span></div>
+    </div>
+
+    <%# ── Stores Table ── %>
+    <div class="table-card" id="storesTableCard">
+      <div class="table-card-hdr">
+        <div>
+          <div class="table-card-title"><i class="bi bi-table me-2" style="color:var(--text-muted)"></i>All Stores — Subscription & Billing</div>
+          <div class="table-card-sub">Click "Pay" to record a payment. Overdue &gt; 3 days auto-expires on next request.</div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="ctable" id="storesTable">
+          <thead>
+            <tr>
+              <th>#</th><th>Store / Owner</th><th>Plan</th>
+              <th>Sub Status</th><th>Payment</th><th>Due / End Date</th>
+              <th>Total Paid</th><th>Activity</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="storesBody">
+            <% if (_stores.length > 0) { %>
+              <% _stores.forEach(function(s, idx) {
+                const sed      = s.subscription_end_date ? new Date(s.subscription_end_date) : null;
+                const sedDays  = sed ? Math.ceil((sed-new Date())/86400000) : null;
+                const sedClass = !sed?'sed-none':sedDays<0?'sed-past':sedDays<=7?'sed-soon':'sed-ok';
+                const sedFmt   = sed?sed.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+                const ls       = s.last_seen ? new Date(s.last_seen) : null;
+                const isOnline = ls && ls > _now15;
+                const lsFmt    = ls ? ls.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+ls.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : 'Never';
+                const paySt    = s.payment_status || 'unpaid';
+                const due      = s.payment_due_date ? new Date(s.payment_due_date) : null;
+                const dueDays  = due ? Math.ceil((due-new Date())/86400000) : null;
+                const dueFmt   = due ? due.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+                const dueClass = !due?'sed-none':dueDays<0?'sed-past':dueDays<=3?'sed-soon':'sed-ok';
+              %>
+              <tr id="store-row-<%= s.id %>">
+                <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted)">#<%= idx+1 %></td>
+                <td>
+                  <span class="td-store-name"><%= s.name %></span>
+                  <span class="td-email"><%= s.email %></span>
+                </td>
+                <td style="font-size:.74rem;color:var(--text-sec);text-transform:capitalize"><%= s.subscription_plan||'basic' %></td>
+                <td id="badge-<%= s.id %>">
+                  <% if(s.status==='active')   { %><span class="sb sb-active">Active</span>
+                  <% }else if(s.status==='trial')   { %><span class="sb sb-trial">Trial</span>
+                  <% }else if(s.status==='pending') { %><span class="sb sb-pending">Pending</span>
+                  <% }else if(s.status==='expired') { %><span class="sb sb-expired">Expired</span>
+                  <% }else if(s.status==='lifetime'){ %><span class="sb sb-lifetime">Lifetime</span>
+                  <% }else{ %><span class="sb sb-pending"><%= s.status %></span><% } %>
+                </td>
+                <td id="pay-badge-<%= s.id %>">
+                  <% if(paySt==='paid')   { %><span class="sb sb-paid">Paid</span>
+                  <% }else if(paySt==='overdue'){ %><span class="sb sb-overdue">Overdue</span>
+                  <% }else{ %><span class="sb sb-unpaid">Unpaid</span><% } %>
+                </td>
+                <td id="sed-<%= s.id %>">
+                  <span class="<%= sedClass %>" title="Subscription End"><%= sedFmt %></span>
+                  <% if(due){ %>
+                  <br/><span class="<%= dueClass %>" style="font-size:.69rem" title="Payment Due">Due: <%= dueFmt %></span>
+                  <% } %>
+                </td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--emerald)">
+                  $<%= parseFloat(s.total_paid||0).toFixed(2) %>
+                </td>
+                <td>
+                  <div class="online-wrap">
+                    <span class="online-dot <%= isOnline?'dot-on':'dot-off' %>"></span>
+                    <span style="color:var(--text-sec);font-size:.73rem"><%= isOnline?'Online':lsFmt %></span>
+                  </div>
+                </td>
+                <td id="actions-<%= s.id %>">
+                  <div class="store-actions">
+                    <%# Status toggles %>
+                    <% if(s.status!=='active')   { %><button type="button" class="btn-a btn-activate"  onclick="setStatus('<%= s.id %>','active',this)"  ><span class="btn-spin"></span><i class="bi bi-check-circle-fill"></i> Activate</button><% } %>
+                    <% if(s.status!=='trial')    { %><button type="button" class="btn-a btn-trial-s"   onclick="setStatus('<%= s.id %>','trial',this)"   ><span class="btn-spin"></span><i class="bi bi-clock-fill"></i> Trial</button><% } %>
+                    <% if(s.status!=='lifetime') { %><button type="button" class="btn-a btn-lifetime"  onclick="setStatus('<%= s.id %>','lifetime',this)" ><span class="btn-spin"></span><i class="bi bi-infinity"></i> Lifetime</button><% } %>
+                    <% if(s.status!=='expired')  { %><button type="button" class="btn-a btn-expire"    onclick="setStatus('<%= s.id %>','expired',this)"  ><span class="btn-spin"></span><i class="bi bi-x-circle-fill"></i> Expire</button><% } %>
+                    <span class="action-sep"></span>
+                    <%# Billing + management %>
+                    <button type="button" class="btn-a btn-pay"       onclick="openPayModal('<%= s.id %>','<%= s.name %>',<%= parseFloat(s.total_paid||0).toFixed(2) %>)"><i class="bi bi-cash-coin"></i> Pay</button>
+                    <button type="button" class="btn-a btn-extend"    onclick="openExtendModal('<%= s.id %>','<%= s.name %>',<%= sed?`'${sed.toISOString()}'`:'null' %>)"><i class="bi bi-calendar-plus-fill"></i> +Days</button>
+                    <button type="button" class="btn-a btn-notify"    onclick="openNotifyModal('<%= s.id %>','<%= s.name %>')"><i class="bi bi-megaphone-fill"></i> Notify</button>
+                    <button type="button" class="btn-a btn-del-store" onclick="openDeleteModal('<%= s.id %>','<%= s.name %>')"><i class="bi bi-trash3-fill"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <% }); %>
+            <% } else { %>
+            <tr><td colspan="9" class="empty-state"><i class="bi bi-buildings"></i><p>No stores registered yet.</p></td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <%# ════ MODALS ════ %>
+
+  <%# Record Payment Modal %>
+  <div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content m-dark">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-cash-coin me-2" style="color:var(--emerald)"></i>Record Payment</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-meta" id="payModalMeta">Store: —</div>
+          <div class="mf"><label>Quick Amount Presets</label></div>
+          <div class="pay-presets">
+            <button class="pay-preset" onclick="setPayAmount(200)">200 EGP</button>
+            <button class="pay-preset" onclick="setPayAmount(400)">400 EGP</button>
+            <button class="pay-preset" onclick="setPayAmount(2000)">2000 EGP</button>
+          </div>
+          <div class="row g-3">
+            <div class="col-6"><div class="mf"><label>Amount (EGP) *</label><input type="number" id="payAmount" placeholder="e.g. 400" min="1" /></div></div>
+            <div class="col-6">
+              <div class="mf"><label>Extend Subscription (days)</label><input type="number" id="payDays" value="30" min="1" max="3650" /></div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="mf" style="margin-bottom:0"><label>Plan</label>
+                <select id="payPlan">
+                  <option value="basic">Basic</option>
+                  <option value="premium">Premium</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="mf" style="margin-bottom:0"><label>Method</label>
+                <select id="payMethod">
+                  <option value="manual">Manual / Cash</option>
+                  <option value="whatsapp">WhatsApp Transfer</option>
+                  <option value="instapay">Instapay</option>
+                  <option value="vodafone_cash">Vodafone Cash</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="mf mt-3" style="margin-bottom:0"><label>Notes (optional)</label><textarea id="payNotes" rows="2" placeholder="Payment reference, notes…"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-m-ok green" id="confirmPayBtn">
+            <span class="spin-ring" id="paySpin"></span>
+            <span id="payBtnTxt"><i class="bi bi-check2-circle"></i> Record Payment</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Extend Days Modal %>
+  <div class="modal fade" id="extendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content m-dark">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-calendar-plus-fill me-2" style="color:var(--brand)"></i>Extend Subscription</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-meta">Store: <strong id="extendStoreName">—</strong><br/>Current end: <strong id="extendCurrentEnd" style="font-family:'JetBrains Mono',monospace">—</strong></div>
+          <div class="mf" style="margin-bottom:.5rem"><label>Quick Presets</label></div>
+          <div class="preset-days">
+            <button class="preset-btn" onclick="setExtendDays(3)">+3 days</button>
+            <button class="preset-btn" onclick="setExtendDays(7)">+7 days</button>
+            <button class="preset-btn" onclick="setExtendDays(30)">+30 days</button>
+            <button class="preset-btn" onclick="setExtendDays(90)">+90 days</button>
+            <button class="preset-btn" onclick="setExtendDays(365)">+1 year</button>
+          </div>
+          <div class="mf"><label>Custom Days</label><input type="number" id="extendDays" value="30" min="1" max="3650" oninput="updateExtendPreview()" /></div>
+          <div class="extend-preview">New end date: <strong id="extendNewDate">—</strong></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-m-ok blue" id="confirmExtendBtn">
+            <span class="spin-ring" id="extSpin"></span>
+            <span id="extBtnTxt"><i class="bi bi-calendar-check-fill"></i> Extend Access</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Send Notification Modal %>
+  <div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content m-dark">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2" style="color:var(--sky)"></i>Send Notification</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-meta">Sends banner to <strong id="notifyStoreName">—</strong>'s dashboard.</div>
+          <div class="mf">
+            <label>Message (max 500 chars)</label>
+            <textarea id="notifyMessage" rows="4" maxlength="500" oninput="document.getElementById('notifyCC').textContent=this.value.length+'/500'" placeholder="e.g. Your trial has been extended by 7 days!"></textarea>
+            <div style="font-size:.72rem;color:var(--text-muted);text-align:right;margin-top:3px" id="notifyCC">0/500</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-m-ok sky" id="confirmNotifyBtn">
+            <span class="spin-ring" id="notifySpin"></span>
+            <span id="notifyBtnTxt"><i class="bi bi-send-fill"></i> Send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Delete Store Modal %>
+  <div class="modal fade" id="deleteStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content m-dark">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-trash3-fill me-2" style="color:var(--rose)"></i>Delete Store</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:.875rem;color:var(--text-sec);margin:0">Permanently delete <strong style="color:var(--text)" id="deleteStoreName">—</strong>? <strong style="color:var(--rose)">Cannot be undone.</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-m-ok red" id="confirmDeleteStoreBtn">
+            <span class="spin-ring" id="delStoreSpin"></span>
+            <span id="delStoreBtnTxt"><i class="bi bi-trash3-fill"></i> Delete Forever</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Create Store Modal %>
+  <div class="modal fade" id="createStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content m-dark">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2" style="color:var(--emerald)"></i>Create Store Account</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="csFormSection">
+            <div class="row g-3"><div class="col-7"><div class="mf"><label>Store Name *</label><input type="text" id="csName" /></div></div><div class="col-5"><div class="mf"><label>Phone</label><input type="tel" id="csPhone" dir="ltr" /></div></div></div>
+            <div class="mf"><label>Email *</label><input type="email" id="csEmail" /></div>
+            <div class="mf">
+              <label>Password *</label>
+              <div class="pw-gen-wrap">
+                <div class="pw-field-wrap"><input type="text" id="csPassword" /><button type="button" class="pw-copy-btn" onclick="copyPasswordField()"><i class="bi bi-clipboard" id="copyPwFieldIcon"></i></button></div>
+                <button type="button" class="btn-gen-pw" onclick="autoGeneratePassword()"><i class="bi bi-shuffle me-1"></i>Auto-Generate</button>
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-6"><div class="mf" style="margin-bottom:0"><label>Initial Status</label><select id="csStatus" onchange="toggleCsDays()"><option value="trial">Trial</option><option value="active">Active</option><option value="pending">Pending</option><option value="lifetime">Lifetime</option></select></div></div>
+              <div class="col-6" id="csDaysCol"><div class="mf" style="margin-bottom:0"><label>Subscription Days</label><input type="number" id="csDays" value="30" min="1" /></div></div>
+            </div>
+          </div>
+          <div id="csSuccessSection" style="display:none">
+            <div class="cs-success-box">
+              <div class="cs-success-hdr"><i class="bi bi-check-circle-fill"></i>Store Account Created!</div>
+              <div class="cs-cred-row"><span class="cs-cred-lbl">Store</span><span class="cs-cred-val" id="csCreatedName">—</span></div>
+              <div class="cs-cred-row"><span class="cs-cred-lbl">Email</span><span class="cs-cred-val" id="csCreatedEmail">—</span></div>
+              <div class="cs-cred-row"><span class="cs-cred-lbl">Password</span><span class="cs-cred-val" id="csCreatedPw">—</span><button type="button" class="cs-copy-btn" onclick="copyCreatedCredentials()"><i class="bi bi-clipboard" id="copyCreatedIcon"></i> Copy</button></div>
+              <p class="cs-note"><i class="bi bi-exclamation-triangle-fill"></i>Save these credentials — the password is hashed in the DB and <strong>cannot be retrieved later.</strong></p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" id="csFooter">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal" id="csCancelBtn">Cancel</button>
+          <button type="button" class="btn-m-ok green" id="confirmCreateStoreBtn">
+            <span class="spin-ring" id="csSpin"></span>
+            <span id="csBtnTxt"><i class="bi bi-person-plus-fill"></i> Create Account</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# WhatsApp Config Modal %>
+  <div class="modal fade" id="waConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content m-dark">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-whatsapp me-2" style="color:var(--wa)"></i>Update WhatsApp Number</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><div class="mf" style="margin-bottom:0"><label>Number (digits only, with country code)</label><input type="tel" id="waNewNumber" placeholder="e.g. 201021761285" value="<%= (whatsappNumber||'').replace(/\D/g,'') %>" dir="ltr" /></div></div>
+        <div class="modal-footer">
+          <button type="button" class="btn-m-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-m-ok" id="saveWaBtn" style="background:linear-gradient(135deg,var(--wa),#1a9e4f)"><span class="spin-ring" id="waSpin"></span><span id="waBtnTxt"><i class="bi bi-check2"></i> Save</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+  /* ══ ENTRANCE ══ */
+  gsap.set(['.fin-card','.sp','#storesTableCard'],{opacity:0});
+  gsap.set('.fin-card',{y:24}); gsap.set('.sp',{y:12});
+  const etl=gsap.timeline({defaults:{ease:'power3.out'},delay:.1});
+  etl.to('.fin-card',{opacity:1,y:0,stagger:.08,duration:.45})
+     .to('.sp',{opacity:1,y:0,stagger:.06,duration:.35},'-=.25')
+     .to('#storesTableCard',{opacity:1,duration:.4},'-=.2')
+     .from('tbody tr',{opacity:0,x:-10,stagger:.035,duration:.28},'-=.2');
+
+  document.querySelectorAll('.fin-card').forEach(c=>{
+    c.addEventListener('mouseenter',()=>gsap.to(c,{scale:1.02,duration:.15,ease:'power2.out'}));
+    c.addEventListener('mouseleave',()=>gsap.to(c,{scale:1,duration:.15,ease:'power2.out'}));
+  });
+  function bindHovers(){
+    document.querySelectorAll('.btn-a').forEach(b=>{
+      if(b._h)return;b._h=true;
+      b.addEventListener('mouseenter',()=>{if(!b.disabled)gsap.to(b,{scale:1.06,duration:.12,ease:'power2.out'});});
+      b.addEventListener('mouseleave',()=>gsap.to(b,{scale:1,duration:.12,ease:'power2.out'}));
+    });
+  }
+  bindHovers();
+
+  /* ══ TOAST ══ */
+  const TC={success:{icon:'bi-check-circle-fill',title:'Done',cls:'tc-s'},error:{icon:'bi-x-circle-fill',title:'Error',cls:'tc-e'},info:{icon:'bi-info-circle-fill',title:'Note',cls:'tc-i'},warning:{icon:'bi-exclamation-triangle-fill',title:'Warning',cls:'tc-w'}};
+  function showToast(msg,type='info'){
+    const c=TC[type]||TC.info,shelf=document.getElementById('toastShelf'),el=document.createElement('div');
+    el.className=`toast-card ${c.cls}`;el.setAttribute('role','alert');
+    el.innerHTML=`<span class="tc-bar"></span><i class="bi ${c.icon} tc-icon"></i><div class="tc-body"><div class="tc-title">${c.title}</div><div class="tc-msg">${msg}</div></div><button class="tc-close"><i class="bi bi-x-lg"></i></button>`;
+    shelf.appendChild(el);
+    gsap.fromTo(el,{opacity:0,x:55,scale:.93},{opacity:1,x:0,scale:1,duration:.3,ease:'back.out(1.6)'});
+    const dismiss=()=>gsap.to(el,{opacity:0,x:55,scale:.93,duration:.2,ease:'power2.in',onComplete:()=>el.remove()});
+    const t=setTimeout(dismiss,4500);
+    el.querySelector('.tc-close').addEventListener('click',()=>{clearTimeout(t);dismiss();});
+  }
+
+  /* ══ HELPERS ══ */
+  function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(String(s)));return d.innerHTML;}
+  function setLoading(bId,sId,tId,on){
+    const b=document.getElementById(bId),s=document.getElementById(sId),t=document.getElementById(tId);
+    b.disabled=on;if(s)s.style.display=on?'inline-block':'none';if(t)t.style.display=on?'none':'';
+    gsap.to(b,{scale:on?.97:1,duration:.1});
+  }
+  function getBadgeHTML(status){
+    const m={active:'<span class="sb sb-active">Active</span>',trial:'<span class="sb sb-trial">Trial</span>',pending:'<span class="sb sb-pending">Pending</span>',expired:'<span class="sb sb-expired">Expired</span>',lifetime:'<span class="sb sb-lifetime">Lifetime</span>'};
+    return m[status]||`<span class="sb sb-pending">${esc(status)}</span>`;
+  }
+  function getPayBadgeHTML(ps){
+    const m={paid:'<span class="sb sb-paid">Paid</span>',overdue:'<span class="sb sb-overdue">Overdue</span>',unpaid:'<span class="sb sb-unpaid">Unpaid</span>'};
+    return m[ps]||'<span class="sb sb-unpaid">Unpaid</span>';
+  }
+  function refreshCounts(){
+    const counts={active:0,trial:0,pending:0,expired:0,lifetime:0};
+    document.querySelectorAll('[id^="badge-"]').forEach(c=>{Object.keys(counts).forEach(k=>{if(c.querySelector('.sb-'+k))counts[k]++;});});
+    const total=Object.values(counts).reduce((a,b)=>a+b,0);
+    [['cnt-total',total],['cnt-active',counts.active],['cnt-trial',counts.trial],['cnt-pend',counts.pending],['cnt-exp',counts.expired],['cnt-life',counts.lifetime]].forEach(([id,v])=>{
+      const el=document.getElementById(id);if(!el||el.textContent==v)return;
+      el.textContent=v;gsap.from(el,{scale:1.3,duration:.22,ease:'back.out(1.5)'});
+    });
+  }
+
+  /* ══ ENFORCE OVERDUE ══ */
+  async function enforceOverdue(btn){
+    btn.disabled=true;
+    const orig=btn.innerHTML;
+    btn.innerHTML='<span class="spin-ring" style="display:inline-block;width:14px;height:14px;margin-left:6px"></span> Running…';
+    try{
+      const res=await fetch('/admin/billing/enforce',{method:'POST',headers:{'Accept':'application/json'}});
+      const data=await res.json();
+      showToast(data.message||'Overdue enforcement completed.','success');
+      setTimeout(()=>location.reload(),1500);
+    }catch(err){showToast('Failed: '+err.message,'error');}
+    finally{btn.innerHTML=orig;btn.disabled=false;}
+  }
+
+  /* ══ SET STATUS ══ */
+  async function setStatus(storeId,newStatus,triggerBtn){
+    const row=document.getElementById('store-row-'+storeId);
+    const allBtns=row?Array.from(row.querySelectorAll('.btn-a')):[triggerBtn];
+    allBtns.forEach(b=>b.disabled=true);
+    const sp=triggerBtn.querySelector('.btn-spin');if(sp)sp.style.display='inline-block';
+    gsap.to(triggerBtn,{scale:.95,duration:.1});
+    try{
+      const res=await fetch(`/admin/stores/${storeId}/toggle-status`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({status:newStatus}),signal:AbortSignal.timeout(15000)});
+      const data=await res.json();
+      if(res.ok&&data.success){
+        const bc=document.getElementById('badge-'+storeId);
+        if(bc){gsap.to(bc,{scale:.7,opacity:0,duration:.14,onComplete:()=>{bc.innerHTML=getBadgeHTML(newStatus);gsap.to(bc,{scale:1,opacity:1,duration:.22,ease:'back.out(1.6)'});}});}
+        const colors={active:'rgba(14,203,129,.08)',trial:'rgba(245,166,35,.07)',expired:'rgba(244,63,94,.07)',lifetime:'rgba(139,92,246,.07)',pending:'rgba(56,189,248,.07)'};
+        if(row)gsap.fromTo(row,{backgroundColor:colors[newStatus]||'rgba(79,112,232,.07)'},{backgroundColor:'rgba(0,0,0,0)',duration:1.2,ease:'power2.out'});
+        refreshCounts();
+        showToast(`Store ${LABELS[newStatus]||'updated'}.`,'success');
+        /* Rebuild actions after status change */
+        const storeName=row?.querySelector('.td-store-name')?.textContent||'Store';
+        setTimeout(()=>location.reload(),1200);
+      }else{showToast(data.message||'Failed.','error');allBtns.forEach(b=>b.disabled=false);}
+    }catch(err){showToast(err.message||'Connection error.','error');allBtns.forEach(b=>b.disabled=false);}
+    finally{if(sp)sp.style.display='none';gsap.to(triggerBtn,{scale:1,duration:.1});}
+  }
+  const LABELS={active:'activated',trial:'set to trial',pending:'set to pending',expired:'deactivated',lifetime:'set to lifetime'};
+
+  /* ══ RECORD PAYMENT ══ */
+  let _payStoreId=null;
+  function openPayModal(storeId,storeName,totalPaid){
+    _payStoreId=storeId;
+    document.getElementById('payModalMeta').innerHTML=`Store: <strong>${esc(storeName)}</strong> &nbsp;|&nbsp; Total paid to date: <strong style="color:var(--emerald);font-family:'JetBrains Mono',monospace">$${parseFloat(totalPaid).toFixed(2)}</strong>`;
+    document.getElementById('payAmount').value='';
+    document.getElementById('payDays').value='30';
+    document.getElementById('payNotes').value='';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('payModal')).show();
+  }
+  function setPayAmount(v){document.getElementById('payAmount').value=v;}
+  document.getElementById('payModal').addEventListener('hidden.bs.modal',()=>{_payStoreId=null;});
+  document.getElementById('confirmPayBtn').addEventListener('click',async function(){
+    const amount=parseFloat(document.getElementById('payAmount').value);
+    if(!_payStoreId||isNaN(amount)||amount<=0){showToast('Enter a valid payment amount.','error');return;}
+    setLoading('confirmPayBtn','paySpin','payBtnTxt',true);
+    try{
+      const res=await fetch(`/admin/stores/${_payStoreId}/record-payment`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({amount,planName:document.getElementById('payPlan').value,method:document.getElementById('payMethod').value,notes:document.getElementById('payNotes').value,daysToAdd:parseInt(document.getElementById('payDays').value)||30}),signal:AbortSignal.timeout(15000)});
+      const data=await res.json();
+      if(res.ok&&data.success){
+        bootstrap.Modal.getInstance(document.getElementById('payModal')).hide();
+        const pb=document.getElementById('pay-badge-'+_payStoreId);
+        if(pb){gsap.to(pb,{scale:.7,opacity:0,duration:.14,onComplete:()=>{pb.innerHTML=getPayBadgeHTML('paid');gsap.to(pb,{scale:1,opacity:1,duration:.22,ease:'back.out(1.6)'});}});}
+        showToast(data.message||'Payment recorded.','success');
+        setTimeout(()=>location.reload(),1500);
+      }else{showToast(data.message||'Failed to record payment.','error');}
+    }catch(err){showToast(err.message||'Connection error.','error');}
+    finally{setLoading('confirmPayBtn','paySpin','payBtnTxt',false);}
+  });
+
+  /* ══ EXTEND DAYS ══ */
+  let _extId=null,_extCurDate=null;
+  function openExtendModal(storeId,storeName,currentSedISO){
+    _extId=storeId;_extCurDate=currentSedISO?new Date(currentSedISO):null;
+    document.getElementById('extendStoreName').textContent=storeName;
+    document.getElementById('extendCurrentEnd').textContent=_extCurDate?_extCurDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Not set';
+    document.getElementById('extendDays').value=30;updateExtendPreview();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('extendModal')).show();
+  }
+  function setExtendDays(d){document.getElementById('extendDays').value=d;updateExtendPreview();}
+  function updateExtendPreview(){
+    const d=parseInt(document.getElementById('extendDays').value)||0;
+    const b=(_extCurDate&&_extCurDate>new Date())?_extCurDate:new Date();
+    const nd=new Date(b.getTime()+d*86400000);
+    document.getElementById('extendNewDate').textContent=nd.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+  }
+  document.getElementById('extendModal').addEventListener('hidden.bs.modal',()=>{_extId=null;_extCurDate=null;});
+  document.getElementById('confirmExtendBtn').addEventListener('click',async function(){
+    const days=parseInt(document.getElementById('extendDays').value);
+    if(!_extId||isNaN(days)||days<1){showToast('Enter valid days.','error');return;}
+    setLoading('confirmExtendBtn','extSpin','extBtnTxt',true);
+    try{
+      const res=await fetch(`/admin/stores/${_extId}/extend-days`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({days}),signal:AbortSignal.timeout(12000)});
+      const data=await res.json();
+      if(res.ok&&data.success){bootstrap.Modal.getInstance(document.getElementById('extendModal')).hide();showToast(`Extended by ${days} day(s).`,'success');setTimeout(()=>location.reload(),1200);}
+      else{showToast(data.message||'Failed.','error');}
+    }catch(err){showToast(err.message||'Connection error.','error');}
+    finally{setLoading('confirmExtendBtn','extSpin','extBtnTxt',false);}
+  });
+
+  /* ══ NOTIFY ══ */
+  let _notifyId=null;
+  function openNotifyModal(id,name){_notifyId=id;document.getElementById('notifyStoreName').textContent=name;document.getElementById('notifyMessage').value='';document.getElementById('notifyCC').textContent='0/500';bootstrap.Modal.getOrCreateInstance(document.getElementById('notifyModal')).show();}
+  document.getElementById('notifyModal').addEventListener('hidden.bs.modal',()=>{_notifyId=null;});
+  document.getElementById('confirmNotifyBtn').addEventListener('click',async function(){
+    const msg=document.getElementById('notifyMessage').value.trim();
+    if(!_notifyId||!msg){showToast('Write a message first.','error');return;}
+    setLoading('confirmNotifyBtn','notifySpin','notifyBtnTxt',true);
+    try{const res=await fetch(`/admin/stores/${_notifyId}/notify`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({message:msg}),signal:AbortSignal.timeout(12000)});const data=await res.json();if(res.ok&&data.success){bootstrap.Modal.getInstance(document.getElementById('notifyModal')).hide();showToast('Notification sent.','success');}else{showToast(data.message||'Failed.','error');}}
+    catch(err){showToast(err.message||'Connection error.','error');}
+    finally{setLoading('confirmNotifyBtn','notifySpin','notifyBtnTxt',false);}
+  });
+
+  /* ══ DELETE STORE ══ */
+  let _delStoreId=null;
+  function openDeleteModal(id,name){_delStoreId=id;document.getElementById('deleteStoreName').textContent=name;bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteStoreModal')).show();}
+  document.getElementById('deleteStoreModal').addEventListener('hidden.bs.modal',()=>{_delStoreId=null;});
+  document.getElementById('confirmDeleteStoreBtn').addEventListener('click',async function(){
+    if(!_delStoreId)return;
+    setLoading('confirmDeleteStoreBtn','delStoreSpin','delStoreBtnTxt',true);
+    try{const res=await fetch(`/admin/stores/${_delStoreId}`,{method:'DELETE',headers:{'Accept':'application/json','X-Confirm-Delete':'true'},signal:AbortSignal.timeout(15000)});const data=await res.json();
+    if(res.ok&&data.success){bootstrap.Modal.getInstance(document.getElementById('deleteStoreModal')).hide();const row=document.getElementById('store-row-'+_delStoreId);if(row)gsap.to(row,{opacity:0,x:30,height:0,duration:.35,ease:'power2.in',onComplete:()=>row.remove()});refreshCounts();showToast('Store deleted.','success');}
+    else{showToast(data.message||'Failed.','error');}}
+    catch(err){showToast(err.message||'Connection error.','error');}
+    finally{setLoading('confirmDeleteStoreBtn','delStoreSpin','delStoreBtnTxt',false);}
+  });
+
+  /* ══ CREATE STORE ══ */
+  let _lastCreated=null;
+  document.getElementById('createStoreModal').addEventListener('hidden.bs.modal',()=>{
+    document.getElementById('csFormSection').style.display='';document.getElementById('csSuccessSection').style.display='none';
+    document.getElementById('csFooter').style.display='';document.getElementById('csCancelBtn').textContent='Cancel';
+    document.getElementById('confirmCreateStoreBtn').style.display='';
+    ['csName','csEmail','csPhone','csPassword','csDays'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('csStatus').value='trial';toggleCsDays();
+    if(_lastCreated){location.reload();_lastCreated=null;}
+  });
+  function toggleCsDays(){const s=document.getElementById('csStatus').value;document.getElementById('csDaysCol').style.display=['trial','active'].includes(s)?'':'none';}
+  toggleCsDays();
+  function autoGeneratePassword(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*';let pw='';for(let i=0;i<14;i++)pw+=chars[Math.floor(Math.random()*chars.length)];const inp=document.getElementById('csPassword');inp.value=pw;gsap.fromTo(inp,{borderColor:'var(--emerald)'},{borderColor:'var(--border)',duration:1.2});showToast('Password generated. Copy it!','info');}
+  function copyPasswordField(){const v=document.getElementById('csPassword').value;if(!v){showToast('Generate or enter a password first.','error');return;}navigator.clipboard?.writeText(v).then(()=>{document.getElementById('copyPwFieldIcon').className='bi bi-clipboard-check';showToast('Copied!','success');setTimeout(()=>document.getElementById('copyPwFieldIcon').className='bi bi-clipboard',2000);}).catch(()=>showToast('Copy failed.','error'));}
+  function copyCreatedCredentials(){const e=document.getElementById('csCreatedEmail').textContent;const p=document.getElementById('csCreatedPw').textContent;navigator.clipboard?.writeText(`Email: ${e}\nPassword: ${p}`).then(()=>{document.querySelector('.cs-copy-btn').innerHTML='<i class="bi bi-clipboard-check"></i> Copied!';showToast('Credentials copied!','success');});}
+  document.getElementById('confirmCreateStoreBtn').addEventListener('click',async function(){
+    const name=document.getElementById('csName').value.trim(),email=document.getElementById('csEmail').value.trim(),pw=document.getElementById('csPassword').value,phone=document.getElementById('csPhone').value.trim(),status=document.getElementById('csStatus').value,days=parseInt(document.getElementById('csDays').value)||30;
+    if(!name){showToast('Store name required.','error');return;}if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showToast('Valid email required.','error');return;}if(!pw||pw.length<6){showToast('Password ≥ 6 characters.','error');return;}
+    setLoading('confirmCreateStoreBtn','csSpin','csBtnTxt',true);
+    try{const res=await fetch('/admin/stores/create',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({storeName:name,email,password:pw,phone:phone||null,status,subscriptionDays:days}),signal:AbortSignal.timeout(15000)});const data=await res.json();
+    if(res.ok&&data.success){_lastCreated=data.store;document.getElementById('csFormSection').style.display='none';document.getElementById('csSuccessSection').style.display='';document.getElementById('csCreatedName').textContent=data.store.name;document.getElementById('csCreatedEmail').textContent=data.store.email;document.getElementById('csCreatedPw').textContent=pw;document.getElementById('confirmCreateStoreBtn').style.display='none';document.getElementById('csCancelBtn').innerHTML='<i class="bi bi-check2 me-1"></i>Done – Close';gsap.from('#csSuccessSection',{opacity:0,y:10,duration:.35,ease:'power2.out'});}
+    else{showToast(data.message||'Failed.','error');}}
+    catch(err){showToast(err.message||'Connection error.','error');}
+    finally{setLoading('confirmCreateStoreBtn','csSpin','csBtnTxt',false);}
+  });
+
+  /* ══ WA CONFIG ══ */
+  function copyWaNum(){const n=document.getElementById('waNumDisplay').textContent;navigator.clipboard?.writeText(n).then(()=>showToast('Copied!','success'));}
+  document.getElementById('saveWaBtn').addEventListener('click',async function(){
+    const num=document.getElementById('waNewNumber').value.replace(/\D/g,'');if(!num||num.length<7){showToast('Invalid number.','error');return;}
+    setLoading('saveWaBtn','waSpin','waBtnTxt',true);
+    try{const res=await fetch('/admin/config/whatsapp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({number:num}),signal:AbortSignal.timeout(10000)});const data=await res.json();
+    if(res.ok&&data.success){document.getElementById('waNumDisplay').textContent=num;bootstrap.Modal.getInstance(document.getElementById('waConfigModal')).hide();showToast('WhatsApp number updated.','success');}else{showToast(data.message||'Failed.','error');}}
+    catch(err){showToast(err.message||'Error.','error');}
+    finally{setLoading('saveWaBtn','waSpin','waBtnTxt',false);}
+  });
+  </script>
+</body>
+</html>

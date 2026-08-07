@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دخول الكاشير — VaultixPOS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --brand:#4F70E8;--brand-glow:rgba(79,112,232,.25);
+      --emerald:#0ECB81;--rose:#F43F5E;--amber:#F5A623;
+      --bg:#070E1C;--surface:#0C1625;--input:#0D1827;--border:#192B42;
+      --text:#EEF2FF;--text-sec:#8FA3BF;--text-muted:#4A6080;
+    }
+    *,*::before,*::after{box-sizing:border-box;}
+    html,body{min-height:100vh;font-family:'Cairo',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:1.5rem;direction:rtl;}
+
+    .orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+    .orb-1{width:400px;height:400px;background:radial-gradient(circle,rgba(79,112,232,.14),transparent 65%);top:-100px;right:-80px;}
+    .orb-2{width:300px;height:300px;background:radial-gradient(circle,rgba(14,203,129,.08),transparent 65%);bottom:-60px;left:-60px;}
+
+    .login-card{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:2.5rem 2rem;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);}
+
+    .card-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:1.75rem;}
+    .card-mark{width:40px;height:40px;background:linear-gradient(135deg,var(--brand),#2C3FA0);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;box-shadow:0 0 14px var(--brand-glow);}
+    .card-title{font-size:1.2rem;font-weight:800;letter-spacing:-.2px;}
+    .card-title em{font-style:normal;color:var(--brand);}
+
+    .cashier-icon{width:64px;height:64px;background:rgba(79,112,232,.1);border:1.5px solid rgba(79,112,232,.25);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--brand);margin:0 auto 1rem;}
+
+    h2{font-size:1.4rem;font-weight:800;text-align:center;margin-bottom:.4rem;}
+    .subtitle{text-align:center;font-size:.85rem;color:var(--text-sec);margin-bottom:2rem;line-height:1.6;}
+
+    .field{margin-bottom:1rem;}
+    .field label{display:block;font-size:.76rem;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+    .field-wrap{position:relative;}
+    .field-wrap input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:9px;padding:12px 44px 12px 14px;font-size:.95rem;font-family:'Cairo',sans-serif;color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s;text-align:right;}
+    .field-wrap input::placeholder{color:var(--text-muted);}
+    .field-wrap input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-glow);}
+    .field-wrap .f-icon{position:absolute;top:50%;right:13px;transform:translateY(-50%);font-size:16px;color:var(--text-muted);pointer-events:none;}
+    .field-wrap input:focus ~ .f-icon{color:var(--brand);}
+
+    /* PIN dots display */
+    .pin-dots{display:flex;justify-content:center;gap:12px;margin:1rem 0 .5rem;}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:background .15s,border-color .15s;}
+    .pin-dot.filled{background:var(--brand);border-color:var(--brand);}
+
+    /* Numpad */
+    .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem 0 1.25rem;}
+    .np-btn{padding:15px 10px;background:rgba(25,43,66,.5);border:1px solid var(--border);border-radius:10px;font-size:1.3rem;font-weight:700;font-family:'Cairo',sans-serif;color:var(--text);cursor:pointer;transition:background .14s,transform .1s;text-align:center;}
+    .np-btn:hover{background:rgba(25,43,66,.9);}
+    .np-btn:active{transform:scale(.9);}
+    .np-btn.zero{grid-column:2;}
+    .np-btn.back{grid-column:3;font-size:1.1rem;color:var(--text-sec);}
+
+    .btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--brand),#3655C5);border:none;border-radius:9px;font-size:1rem;font-weight:800;font-family:'Cairo',sans-serif;color:#fff;cursor:pointer;transition:transform .14s,box-shadow .2s,opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-submit:hover:not(:disabled){box-shadow:0 6px 22px var(--brand-glow);transform:translateY(-1px);}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+    .spin-ring{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    .error-msg{display:none;text-align:center;font-size:.83rem;color:var(--rose);margin-top:.6rem;padding:8px;background:rgba(244,63,94,.08);border-radius:8px;border:1px solid rgba(244,63,94,.2);}
+
+    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+  </style>
+</head>
+<body>
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+
+  <div class="login-card" id="loginCard">
+
+    <div class="card-brand">
+      <div class="card-mark"><i class="bi bi-lightning-charge-fill"></i></div>
+      <span class="card-title">Vault<em>ix</em>POS</span>
+    </div>
+
+    <div class="cashier-icon" id="cashierIcon">
+      <i class="bi bi-person-badge-fill"></i>
+    </div>
+    <h2>دخول الكاشير</h2>
+    <p class="subtitle">ادخل رقم المتجر، رقمك، وبيزقك (PIN) للدخول</p>
+
+    <form id="cashierForm" novalidate>
+
+      <%# Store ID %>
+      <div class="field">
+        <label for="storeId">رقم المتجر</label>
+        <div class="field-wrap">
+          <input type="number" id="storeId" name="storeId"
+                 placeholder="اسأل المالك عن الرقم" min="1" required dir="ltr" />
+          <i class="bi bi-shop f-icon"></i>
+        </div>
+      </div>
+
+      <%# Employee Number %>
+      <div class="field">
+        <label for="empNum">رقمك كموظف</label>
+        <div class="field-wrap">
+          <input type="text" id="empNum" name="employeeNum"
+                 placeholder="مثال: 1 أو EMP01" required dir="ltr" />
+          <i class="bi bi-person-badge f-icon"></i>
+        </div>
+      </div>
+
+      <%# PIN input (hidden) + visual dots + numpad %>
+      <div class="field">
+        <label>البيزق (PIN)</label>
+        <input type="hidden" id="pinValue" name="pin" />
+        <div class="pin-dots" id="pinDots">
+          <div class="pin-dot" id="dot0"></div>
+          <div class="pin-dot" id="dot1"></div>
+          <div class="pin-dot" id="dot2"></div>
+          <div class="pin-dot" id="dot3"></div>
+          <div class="pin-dot" id="dot4"></div>
+          <div class="pin-dot" id="dot5"></div>
+        </div>
+
+        <div class="numpad" id="numpad">
+          <button type="button" class="np-btn" onclick="addPin('1')">1</button>
+          <button type="button" class="np-btn" onclick="addPin('2')">2</button>
+          <button type="button" class="np-btn" onclick="addPin('3')">3</button>
+          <button type="button" class="np-btn" onclick="addPin('4')">4</button>
+          <button type="button" class="np-btn" onclick="addPin('5')">5</button>
+          <button type="button" class="np-btn" onclick="addPin('6')">6</button>
+          <button type="button" class="np-btn" onclick="addPin('7')">7</button>
+          <button type="button" class="np-btn" onclick="addPin('8')">8</button>
+          <button type="button" class="np-btn" onclick="addPin('9')">9</button>
+          <button type="button" class="np-btn zero" onclick="addPin('0')">0</button>
+          <button type="button" class="np-btn back" onclick="removePin()">
+            <i class="bi bi-backspace-fill"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="loginBtn">
+        <span class="spin-ring" id="loginSpinner"></span>
+        <span id="loginBtnText"><i class="bi bi-box-arrow-in-right"></i> دخول</span>
+      </button>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+    </form>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    /* ── Entrance ── */
+    gsap.set('#loginCard', { opacity:0, y:28 });
+    gsap.to('#loginCard', { opacity:1, y:0, duration:.55, ease:'power3.out', delay:.1 });
+    gsap.to('#cashierIcon', { y:-4, duration:1.4, yoyo:true, repeat:-1, ease:'sine.inOut' });
+
+    /* ── PIN Logic ── */
+    let pin = '';
+    const MAX_PIN = 6;
+
+    function updateDots() {
+      for (let i = 0; i < MAX_PIN; i++) {
+        const dot = document.getElementById('dot' + i);
+        if (i < pin.length) {
+          dot.classList.add('filled');
+          gsap.from(dot, { scale: 1.4, duration: .15, ease: 'back.out(2)' });
+        } else {
+          dot.classList.remove('filled');
+        }
+      }
+      document.getElementById('pinValue').value = pin;
+    }
+
+    function addPin(digit) {
+      if (pin.length >= MAX_PIN) return;
+      pin += digit;
+      updateDots();
+      gsap.to('#dot' + (pin.length - 1), { scale: 1.2, duration: .08, yoyo: true, repeat: 1 });
+    }
+
+    function removePin() {
+      if (!pin.length) return;
+      pin = pin.slice(0, -1);
+      updateDots();
+    }
+
+    /* ── Keyboard support ── */
+    document.addEventListener('keydown', e => {
+      if (/^[0-9]$/.test(e.key)) addPin(e.key);
+      else if (e.key === 'Backspace') removePin();
+    });
+
+    /* ── Form Submit ── */
+    document.getElementById('cashierForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const storeId = document.getElementById('storeId').value.trim();
+      const empNum  = document.getElementById('empNum').value.trim();
+      const errEl   = document.getElementById('errorMsg');
+
+      errEl.style.display = 'none';
+
+      if (!storeId)      { showError('الرجاء إدخال رقم المتجر.');  return; }
+      if (!empNum)       { showError('الرجاء إدخال رقمك كموظف.'); return; }
+      if (pin.length < 4){ showError('البيزق لا يقل عن 4 أرقام.');  return; }
+
+      const btn     = document.getElementById('loginBtn');
+      const spinner = document.getElementById('loginSpinner');
+      const btnText = document.getElementById('loginBtnText');
+      btn.disabled          = true;
+      spinner.style.display = 'block';
+      btnText.style.display = 'none';
+
+      try {
+        const res  = await fetch('/cashier/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body:    JSON.stringify({ storeId, employeeNum: empNum, pin }),
+          signal:  AbortSignal.timeout(10000),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          gsap.to('#loginCard', { opacity:0, scale:.96, duration:.35, ease:'power2.in',
+            onComplete: () => { window.location.href = '/cashier/dashboard'; }
+          });
+        } else {
+          showError(data.message || 'رقم الموظف أو البيزق غلط. حاول تاني.');
+          pin = ''; updateDots();
+          gsap.to('#loginCard', {
+            keyframes:{ x:[0,-8,8,-6,6,0] }, duration:.4, ease:'none'
+          });
+        }
+      } catch (err) {
+        showError('خطأ في الاتصال. تأكد من الإنترنت وحاول مرة أخرى.');
+      } finally {
+        btn.disabled          = false;
+        spinner.style.display = 'none';
+        btnText.style.display = '';
+      }
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent  = msg;
+      el.style.display = 'block';
+      gsap.from(el, { opacity:0, y:-8, duration:.25, ease:'power2.out' });
+    }
+  </script>
+</body>
+</html>

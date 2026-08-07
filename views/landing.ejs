@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultixPOS — نظام نقطة البيع الذكي</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand:#4F70E8; --brand-glow:rgba(79,112,232,.28);
+      --emerald:#0ECB81; --rose:#F43F5E; --amber:#F5A623; --violet:#8B5CF6;
+      --bg:#060C18; --surface:#0A1422; --elevated:#0D1B2E; --border:#172637; --border-h:#253F5C;
+      --text:#EEF2FF; --text-sec:#8FA3BF; --text-muted:#456080;
+      --wa:#25D366; --wa-glow:rgba(37,211,102,.35);
+    }
+    *,*::before,*::after{box-sizing:border-box; margin:0; padding:0;}
+    html{scroll-behavior:smooth;}
+    body{font-family:'Cairo',system-ui,sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; direction:rtl;}
+
+    /* ── Orbs ── */
+    .orb{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;}
+    .orb-1{width:600px;height:600px;background:radial-gradient(circle,rgba(79,112,232,.12),transparent 65%);top:-150px;right:-120px;}
+    .orb-2{width:400px;height:400px;background:radial-gradient(circle,rgba(139,92,246,.09),transparent 65%);bottom:-100px;left:-80px;}
+    .orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(14,203,129,.07),transparent 65%);top:40%;left:30%;}
+
+    /* ── Navbar ── */
+    .lp-nav{position:sticky;top:0;z-index:200;background:rgba(6,12,24,.88);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+    .nav-logo{display:flex;align-items:center;gap:10px;}
+    .nav-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--brand),#2C3FA0);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 0 14px var(--brand-glow);}
+    .nav-brand-name{font-size:1.2rem;font-weight:800;letter-spacing:-.3px;}
+    .nav-brand-name em{font-style:normal;color:var(--brand);}
+    .btn-login-nav{display:inline-flex;align-items:center;gap:7px;padding:9px 22px;background:rgba(79,112,232,.12);border:1px solid rgba(79,112,232,.3);border-radius:9px;color:#93ADFF;font-size:.88rem;font-weight:700;text-decoration:none;font-family:'Cairo',sans-serif;transition:background .15s,transform .13s;}
+    .btn-login-nav:hover{background:rgba(79,112,232,.22);transform:translateY(-1px);color:#93ADFF;}
+
+    /* ── Hero ── */
+    .hero{position:relative;z-index:1;text-align:center;padding:6rem 1.5rem 4rem;}
+    .hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 16px;background:rgba(79,112,232,.1);border:1px solid rgba(79,112,232,.25);border-radius:50px;font-size:.8rem;font-weight:600;color:#93ADFF;margin-bottom:1.5rem;}
+    .hero-badge i{font-size:12px;}
+    .hero h1{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;letter-spacing:-.5px;line-height:1.2;margin-bottom:1.2rem;}
+    .hero h1 .grad{background:linear-gradient(90deg,var(--brand) 0%,var(--violet) 50%,#38BDF8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero p{font-size:1.1rem;color:var(--text-sec);max-width:560px;margin:0 auto 2.5rem;line-height:1.8;}
+    .hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin-top:1rem;}
+    .h-stat{text-align:center;}
+    .h-stat .val{font-size:1.8rem;font-weight:900;color:var(--text);display:block;font-family:'JetBrains Mono',monospace;}
+    .h-stat .lbl{font-size:.78rem;color:var(--text-muted);margin-top:2px;}
+
+    /* ── Section Title ── */
+    .section-title{text-align:center;margin-bottom:3rem;position:relative;z-index:1;}
+    .section-title h2{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:900;letter-spacing:-.4px;margin-bottom:.5rem;}
+    .section-title p{color:var(--text-sec);font-size:.95rem;}
+
+    /* ── Pricing Cards ── */
+    .pricing-section{padding:2rem 1.5rem 5rem;position:relative;z-index:1;}
+    .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1.5rem;max-width:1100px;margin:0 auto;}
+
+    .p-card{
+      background:var(--surface);
+      border-radius:18px;
+      padding:2rem 1.75rem;
+      display:flex;flex-direction:column;
+      position:relative;
+      overflow:hidden;
+      transition:transform .22s,box-shadow .22s;
+    }
+    .p-card:hover{transform:translateY(-6px);}
+    .p-card::before{content:'';position:absolute;inset:0;border-radius:18px;padding:1.5px;background:var(--card-border,var(--border));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+
+    /* Basic */
+    .p-card.basic{--card-border:var(--border);}
+    /* Premium */
+    .p-card.premium{--card-border:linear-gradient(135deg,var(--brand),var(--violet));box-shadow:0 0 40px rgba(79,112,232,.15),0 8px 32px rgba(0,0,0,.4);}
+    /* Enterprise */
+    .p-card.enterprise{--card-border:linear-gradient(135deg,var(--amber),#E07B00);}
+
+    .featured-badge{position:absolute;top:16px;left:16px;padding:4px 12px;background:linear-gradient(135deg,var(--brand),var(--violet));border-radius:20px;font-size:.7rem;font-weight:800;color:#fff;letter-spacing:.5px;}
+
+    .p-plan-icon{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:1.25rem;flex-shrink:0;}
+    .basic   .p-plan-icon{background:rgba(56,189,248,.1);color:#38BDF8;}
+    .premium .p-plan-icon{background:rgba(79,112,232,.12);color:var(--brand);}
+    .enterprise .p-plan-icon{background:rgba(245,166,35,.1);color:var(--amber);}
+
+    .p-plan-name{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem;}
+    .basic       .p-plan-name{color:#38BDF8;}
+    .premium     .p-plan-name{color:var(--brand);}
+    .enterprise  .p-plan-name{color:var(--amber);}
+
+    .p-price{margin-bottom:.25rem;}
+    .p-price .amount{font-size:2.6rem;font-weight:900;letter-spacing:-1px;font-family:'Cairo',sans-serif;}
+    .p-price .currency{font-size:1rem;font-weight:700;color:var(--text-sec);margin-right:4px;}
+    .p-price .period{font-size:.8rem;color:var(--text-muted);margin-right:4px;}
+    .p-price-note{font-size:.76rem;color:var(--text-muted);margin-bottom:1.5rem;}
+
+    .p-divider{height:1px;background:var(--border);margin:1.25rem 0;}
+
+    .p-features{list-style:none;padding:0;margin:0 0 1.75rem;flex:1;}
+    .p-features li{display:flex;align-items:flex-start;gap:10px;font-size:.87rem;color:var(--text-sec);padding:.42rem 0;line-height:1.5;}
+    .p-features li .fi{font-size:14px;flex-shrink:0;margin-top:2px;}
+    .fi-yes{color:var(--emerald);}
+    .fi-no{color:var(--text-muted);}
+    .fi-star{color:var(--amber);}
+
+    /* WhatsApp CTA Button */
+    .btn-wa-plan{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      width:100%;padding:13px 20px;
+      background:var(--wa);
+      border:none;border-radius:11px;
+      color:#fff;font-size:.95rem;font-weight:800;
+      font-family:'Cairo',sans-serif;cursor:pointer;text-decoration:none;
+      box-shadow:0 4px 18px var(--wa-glow);
+      transition:transform .14s,box-shadow .2s;
+    }
+    .btn-wa-plan i{font-size:20px;}
+    .btn-wa-plan:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--wa-glow);color:#fff;}
+    .btn-wa-plan:active{transform:scale(.98);}
+    .btn-wa-plan.outline{background:transparent;border:1.5px solid var(--wa);color:var(--wa);box-shadow:none;}
+    .btn-wa-plan.outline:hover{background:rgba(37,211,102,.1);}
+
+    /* ── Features Comparison Row ── */
+    .features-section{padding:3rem 1.5rem 5rem;position:relative;z-index:1;}
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;max-width:900px;margin:0 auto;}
+    .f-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.2rem;text-align:center;transition:border-color .2s,transform .2s;}
+    .f-item:hover{border-color:var(--border-h);transform:translateY(-3px);}
+    .f-item .f-icon{width:46px;height:46px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:.9rem;}
+    .f-item h4{font-size:.9rem;font-weight:700;margin-bottom:.35rem;}
+    .f-item p{font-size:.78rem;color:var(--text-sec);line-height:1.6;margin:0;}
+
+    /* ── Footer ── */
+    .lp-footer{border-top:1px solid var(--border);padding:2rem;text-align:center;color:var(--text-muted);font-size:.8rem;position:relative;z-index:1;}
+    .lp-footer a{color:var(--brand);text-decoration:none;}
+
+    /* ── Toast ── */
+    #toastShelf{position:fixed;bottom:1.25rem;left:1.25rem;z-index:9900;display:flex;flex-direction:column;gap:8px;width:min(340px,calc(100vw - 2.5rem));}
+    .toast-card{position:relative;overflow:hidden;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;background:var(--elevated);border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.6);}
+    .tc-bar{position:absolute;top:0;right:0;width:3px;height:100%;}
+    .tc-s .tc-bar{background:var(--emerald);} .tc-e .tc-bar{background:var(--rose);}
+    .tc-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+    .tc-s .tc-icon{color:var(--emerald);} .tc-e .tc-icon{color:var(--rose);}
+    .tc-body{flex:1;min-width:0;}
+    .tc-title{font-size:.82rem;font-weight:700;color:var(--text);}
+    .tc-msg{font-size:.78rem;color:var(--text-sec);margin-top:2px;}
+    .tc-close{background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:2px;flex-shrink:0;}
+
+    @media(max-width:640px){.hero{padding:4rem 1rem 3rem;} .pricing-grid{grid-template-columns:1fr;} .hero-stats{gap:1.5rem;}}
+    @media(prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+  <div id="toastShelf" role="log" aria-live="polite"></div>
+
+  <%# ── Navbar ── %>
+  <nav class="lp-nav">
+    <div class="nav-logo">
+      <div class="nav-mark"><i class="bi bi-lightning-charge-fill"></i></div>
+      <span class="nav-brand-name">Vault<em>ix</em>POS</span>
+    </div>
+    <a href="/login" class="btn-login-nav">
+      <i class="bi bi-box-arrow-in-left"></i>
+      تسجيل الدخول
+    </a>
+  </nav>
+
+  <%# ── Hero ── %>
+  <section class="hero" id="hero">
+    <div class="hero-badge" id="heroBadge">
+      <i class="bi bi-lightning-charge-fill"></i>
+      نظام إدارة المبيعات والمخزون
+    </div>
+    <h1 id="heroTitle">
+      أدِر متجرك بذكاء<br />
+      <span class="grad">أسرع · أدق · أربح</span>
+    </h1>
+    <p id="heroDesc">
+      نظام كاشير متكامل يساعدك على تتبع مبيعاتك، إدارة مخزونك، ومراقبة أداء موظفيك
+      من أي مكان وفي أي وقت.
+    </p>
+    <div class="hero-stats" id="heroStats">
+      <div class="h-stat"><span class="val">+500</span><span class="lbl">متجر نشط</span></div>
+      <div class="h-stat"><span class="val">99.9%</span><span class="lbl">وقت التشغيل</span></div>
+      <div class="h-stat"><span class="val">24/7</span><span class="lbl">دعم على واتساب</span></div>
+    </div>
+  </section>
+
+  <%# ── Pricing Section ── %>
+  <section class="pricing-section" id="pricing">
+    <div class="section-title" id="pricingTitle">
+      <h2>اختر الباقة المناسبة لك</h2>
+      <p>جميع الباقات تشمل الإعداد المجاني والدعم الفني على واتساب</p>
+    </div>
+
+    <div class="pricing-grid" id="pricingGrid">
+
+      <%# ── Basic Card ── %>
+      <div class="p-card basic" id="cardBasic">
+        <div class="p-plan-icon"><i class="bi bi-box-seam-fill"></i></div>
+        <div class="p-plan-name">Basic · الأساسي</div>
+        <div class="p-price">
+          <span class="currency">ج</span>
+          <span class="amount">200</span>
+          <span class="period">/ شهر</span>
+        </div>
+        <div class="p-price-note">مثالي للمتاجر الصغيرة والأفراد</div>
+
+        <div class="p-divider"></div>
+
+        <ul class="p-features">
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تسجيل المبيعات بدون حدود</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إدارة المخزون (حتى 200 منتج)</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تقارير يومية وطباعة</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تنبيهات المخزون المنخفض</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إضافة التصنيفات والباركود</li>
+          <li><i class="bi bi-x-circle-fill fi fi-no"></i> إضافة كاشيرين / موظفين</li>
+          <li><i class="bi bi-x-circle-fill fi fi-no"></i> تتبع مبيعات كل موظف</li>
+          <li><i class="bi bi-x-circle-fill fi fi-no"></i> دخول الموظفين برقم + بيزق</li>
+        </ul>
+
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Basic بـ 200 جنيه في VaultixPOS. اسمي: ') %>"
+           target="_blank" rel="noopener noreferrer"
+           class="btn-wa-plan outline"
+           onclick="trackPlan('Basic')">
+          <i class="bi bi-whatsapp"></i>
+          اشترك الآن
+        </a>
+      </div>
+
+      <%# ── Premium Card (Featured) ── %>
+      <div class="p-card premium" id="cardPremium">
+        <div class="featured-badge">⭐ الأكثر طلباً</div>
+        <div class="p-plan-icon" style="margin-top:.5rem"><i class="bi bi-stars"></i></div>
+        <div class="p-plan-name">Premium · بريميم</div>
+        <div class="p-price">
+          <span class="currency">ج</span>
+          <span class="amount">400</span>
+          <span class="period">/ شهر</span>
+        </div>
+        <div class="p-price-note">للمتاجر التي لديها موظفين وكاشيرين</div>
+
+        <div class="p-divider"></div>
+
+        <ul class="p-features">
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> كل مميزات Basic بدون حدود</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> مخزون غير محدود</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> إضافة كاشيرين وموظفين (حتى 10)</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> دخول الموظف برقم + بيزق (PIN)</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> كل موظف يشوف مبيعاته بس</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> المالك يشوف مبيعات كل موظف</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تصدير تقارير مفصلة</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إشعارات فورية للمخزون</li>
+        </ul>
+
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Premium بـ 400 جنيه في VaultixPOS. اسمي: ') %>"
+           target="_blank" rel="noopener noreferrer"
+           class="btn-wa-plan"
+           onclick="trackPlan('Premium')">
+          <i class="bi bi-whatsapp"></i>
+          اشترك في بريميم
+        </a>
+      </div>
+
+      <%# ── Enterprise Card ── %>
+      <div class="p-card enterprise" id="cardEnterprise">
+        <div class="p-plan-icon"><i class="bi bi-building-fill"></i></div>
+        <div class="p-plan-name">Enterprise · الاحترافي</div>
+        <div class="p-price">
+          <span class="currency">ج</span>
+          <span class="amount">2000</span>
+          <span class="period">دفعة واحدة</span>
+        </div>
+        <div class="p-price-note">حساب دائم — لا اشتراكات شهرية</div>
+
+        <div class="p-divider"></div>
+
+        <ul class="p-features">
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> كل مميزات Premium</li>
+          <li><i class="bi bi-infinity fi fi-star"></i> وصول مدى الحياة (Lifetime)</li>
+          <li><i class="bi bi-infinity fi fi-star"></i> موظفين غير محدودين</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إعداد وتخصيص مجاني</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> أولوية في الدعم الفني</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تحديثات مجانية للأبد</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تدريب مجاني على الاستخدام</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> دعم واتساب مباشر 24/7</li>
+        </ul>
+
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الحصول على حساب Enterprise الاحترافي بـ 2000 جنيه في VaultixPOS. اسمي: ') %>"
+           target="_blank" rel="noopener noreferrer"
+           class="btn-wa-plan"
+           style="background:linear-gradient(135deg,var(--amber),#C47D00);box-shadow:0 4px 18px rgba(245,166,35,.35)"
+           onclick="trackPlan('Enterprise')">
+          <i class="bi bi-whatsapp"></i>
+          احصل على حسابك الآن
+        </a>
+      </div>
+
+    </div><%# /pricing-grid %>
+  </section>
+
+  <%# ── Features Highlights ── %>
+  <section class="features-section" id="features">
+    <div class="section-title">
+      <h2>لماذا VaultixPOS؟</h2>
+      <p>صُمِّم خصيصاً للسوق المصري والعربي</p>
+    </div>
+    <div class="features-grid" id="featGrid">
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(79,112,232,.1);color:var(--brand)"><i class="bi bi-lightning-charge-fill"></i></div>
+        <h4>سريع وخفيف</h4>
+        <p>يعمل من أي جهاز أو موبايل بدون تحميل</p>
+      </div>
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(14,203,129,.1);color:var(--emerald)"><i class="bi bi-people-fill"></i></div>
+        <h4>إدارة الموظفين</h4>
+        <p>كل كاشير ليه حساب منفصل برقم وبيزق</p>
+      </div>
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(245,166,35,.1);color:var(--amber)"><i class="bi bi-graph-up-arrow"></i></div>
+        <h4>تقارير مفصلة</h4>
+        <p>شوف مبيعات كل يوم وشهر وكل موظف</p>
+      </div>
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(139,92,246,.1);color:var(--violet)"><i class="bi bi-shield-fill-check"></i></div>
+        <h4>آمن ومحمي</h4>
+        <p>بياناتك مشفرة ومحفوظة على سيرفر آمن</p>
+      </div>
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(37,211,102,.1);color:var(--wa)"><i class="bi bi-whatsapp"></i></div>
+        <h4>دعم واتساب</h4>
+        <p>تواصل معنا مباشرة في أي وقت وأي مشكلة</p>
+      </div>
+      <div class="f-item">
+        <div class="f-icon" style="background:rgba(56,189,248,.1);color:#38BDF8"><i class="bi bi-phone-fill"></i></div>
+        <h4>يعمل على الموبايل</h4>
+        <p>افتحه من أي موبايل أو تابلت بدون تطبيق</p>
+      </div>
+    </div>
+  </section>
+
+  <%# ── Footer ── %>
+  <footer class="lp-footer">
+    <p>
+      © <%= new Date().getFullYear() %> VaultixPOS &nbsp;—&nbsp;
+      <a href="https://wa.me/201021761285" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp"></i> تواصل معنا
+      </a>
+    </p>
+    <p style="margin-top:6px">
+      <a href="/login">تسجيل الدخول</a>
+    </p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+  /* ── Page Entrance GSAP ── */
+  gsap.set(['#heroBadge','#heroTitle','#heroDesc','#heroStats',
+            '#pricingTitle','#cardBasic','#cardPremium','#cardEnterprise',
+            '#featGrid .f-item'], { opacity: 0 });
+  gsap.set(['#heroTitle','#heroDesc'], { y: 24 });
+  gsap.set(['#cardBasic','#cardPremium','#cardEnterprise'], { y: 32 });
+  gsap.set('#featGrid .f-item', { y: 20 });
+
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  tl.to('#heroBadge',  { opacity:1, duration:.4, delay:.1 })
+    .to('#heroTitle',  { opacity:1, y:0, duration:.6 }, '-=.2')
+    .to('#heroDesc',   { opacity:1, y:0, duration:.5 }, '-=.4')
+    .to('#heroStats',  { opacity:1, duration:.4 }, '-=.3')
+    .to('#pricingTitle',{ opacity:1, duration:.4 }, '-=.1')
+    .to(['#cardBasic','#cardPremium','#cardEnterprise'],
+        { opacity:1, y:0, stagger:.12, duration:.5 }, '-=.2')
+    .to('#featGrid .f-item', { opacity:1, y:0, stagger:.08, duration:.4 }, '-=.3');
+
+  /* ── Card hover tilt ── */
+  document.querySelectorAll('.p-card').forEach(card => {
+    card.addEventListener('mouseenter', () => gsap.to(card, { y:-6, duration:.2, ease:'power2.out' }));
+    card.addEventListener('mouseleave', () => gsap.to(card, { y: 0, duration:.2, ease:'power2.out' }));
+  });
+
+  /* ── WA button hover ── */
+  document.querySelectorAll('.btn-wa-plan').forEach(btn => {
+    btn.addEventListener('mouseenter', () => gsap.to(btn, { scale:1.02, duration:.14 }));
+    btn.addEventListener('mouseleave', () => gsap.to(btn, { scale:1,    duration:.14 }));
+  });
+
+  /* ── Plan click tracking toast ── */
+  function trackPlan(plan) {
+    showToast(`جاري تحويلك إلى واتساب لباقة ${plan}…`, 'success');
+  }
+
+  /* ── Toast ── */
+  function showToast(msg, type='info') {
+    const cfg = type==='success'
+      ? {icon:'bi-check-circle-fill',title:'تم',cls:'tc-s'}
+      : {icon:'bi-x-circle-fill',title:'خطأ',cls:'tc-e'};
+    const shelf = document.getElementById('toastShelf');
+    const el    = document.createElement('div');
+    el.className = `toast-card ${cfg.cls}`;
+    el.innerHTML = `<span class="tc-bar"></span>
+      <i class="bi ${cfg.icon} tc-icon"></i>
+      <div class="tc-body"><div class="tc-title">${cfg.title}</div><div class="tc-msg">${msg}</div></div>
+      <button class="tc-close"><i class="bi bi-x-lg"></i></button>`;
+    shelf.appendChild(el);
+    gsap.fromTo(el,{opacity:0,x:-40,scale:.93},{opacity:1,x:0,scale:1,duration:.3,ease:'back.out(1.6)'});
+    const dismiss = () => gsap.to(el,{opacity:0,x:-40,scale:.93,duration:.2,ease:'power2.in',onComplete:()=>el.remove()});
+    const t = setTimeout(dismiss, 3500);
+    el.querySelector('.tc-close').addEventListener('click',()=>{clearTimeout(t);dismiss();});
+  }
+  </script>
+</body>
+</html>

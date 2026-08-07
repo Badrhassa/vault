@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscription Expired — VaultixPOS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #4F70E8; --brand-glow: rgba(79,112,232,0.22);
+      --rose: #F43F5E;  --rose-glow:  rgba(244,63,94,0.22);
+      --emerald: #0ECB81; --amber: #F5A623;
+      --bg: #060C18;    --surface: #0B1525; --border: #172030;
+      --text: #EEF2FF;  --text-sec: #8FA3BF; --text-muted: #4A6080;
+      --wa: #25D366;    --wa-glow: rgba(37,211,102,0.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── Ambient orbs ── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(244,63,94,0.12), transparent 65%); top: -120px; right: -100px; }
+    .orb-2 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(79,112,232,0.1), transparent 65%); bottom: -80px; left: -80px; }
+
+    /* ── Card ── */
+    .exp-card {
+      position: relative; z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      width: 100%; max-width: 480px;
+      text-align: center;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+
+    /* ── Icon ── */
+    .exp-icon {
+      width: 72px; height: 72px;
+      background: rgba(244,63,94,0.1);
+      border: 1.5px solid rgba(244,63,94,0.3);
+      border-radius: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 32px; color: var(--rose);
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0 28px var(--rose-glow);
+    }
+
+    /* ── Brand ── */
+    .exp-brand {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 1.75rem;
+    }
+    .brand-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--brand), #2C3FA0);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #fff;
+    }
+    .brand-type { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.3px; }
+    .brand-type em { font-style: normal; color: var(--brand); }
+
+    /* ── Text ── */
+    .exp-title {
+      font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;
+      color: var(--text); margin-bottom: 0.75rem;
+    }
+    .exp-title .rose { color: var(--rose); }
+    .exp-desc {
+      font-size: 0.88rem; color: var(--text-sec); line-height: 1.75;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Action Buttons ── */
+    .action-stack { display: flex; flex-direction: column; gap: 10px; }
+
+    .btn-wa {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 14px 20px;
+      background: var(--wa);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: 0.95rem; font-weight: 700;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.14s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px var(--wa-glow);
+    }
+    .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--wa-glow); color: #fff; }
+    .btn-wa:active { transform: scale(0.98); }
+    .btn-wa i { font-size: 22px; }
+
+    .btn-refresh {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px 20px;
+      background: rgba(79,112,232,0.1);
+      border: 1px solid rgba(79,112,232,0.28);
+      border-radius: 10px;
+      color: #93ADFF; font-size: 0.88rem; font-weight: 600;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: background 0.15s, transform 0.12s;
+    }
+    .btn-refresh:hover { background: rgba(79,112,232,0.18); transform: translateY(-1px); }
+    .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-logout {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; padding: 11px 20px;
+      background: rgba(25,43,66,0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-sec); font-size: 0.85rem; font-weight: 500;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-logout:hover { background: rgba(25,43,66,0.9); color: var(--text-sec); }
+
+    /* ── Status check feedback ── */
+    .refresh-msg {
+      font-size: 0.78rem; color: var(--text-muted);
+      text-align: center; margin-top: 0.75rem;
+      min-height: 18px;
+    }
+    .refresh-msg.ok   { color: var(--emerald); }
+    .refresh-msg.fail { color: var(--rose); }
+
+    /* ── Spin ── */
+    .spin-ring {
+      display: none; width: 16px; height: 16px;
+      border: 2px solid rgba(147,173,255,0.3);
+      border-top-color: #93ADFF; border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Divider ── */
+    .exp-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 0.25rem 0;
+    }
+    .exp-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .exp-divider-text { font-size: 0.7rem; color: var(--text-muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+
+  <div class="exp-card" id="expCard">
+
+    <%# Brand %>
+    <div class="exp-brand">
+      <div class="brand-mark"><i class="bi bi-lightning-charge-fill"></i></div>
+      <span class="brand-type">Vault<em>ix</em>POS</span>
+    </div>
+
+    <%# Icon %>
+    <div class="exp-icon" id="expIcon">
+      <i class="bi bi-clock-history"></i>
+    </div>
+
+    <%# Heading %>
+    <h1 class="exp-title">Subscription <span class="rose">Expired</span></h1>
+
+    <%# Description %>
+    <p class="exp-desc">
+      Your VaultixPOS subscription has ended and your store access is currently paused.
+      Contact the developer on WhatsApp to renew your plan and restore full access instantly.
+    </p>
+
+    <%# Actions %>
+    <div class="action-stack">
+
+      <%# 1. WhatsApp CTA %>
+      <a
+        href="https://wa.me/<%= (whatsappNumber || '').replace(/\D/g, '') %>?text=<%= encodeURIComponent('Hello, my VaultixPOS subscription has expired. I would like to renew. Store: ' + (storeName || '')) %>"
+        target="_blank" rel="noopener noreferrer"
+        class="btn-wa"
+        id="waBtn"
+      >
+        <i class="bi bi-whatsapp"></i>
+        Contact Support on WhatsApp
+      </a>
+
+      <div class="exp-divider">
+        <div class="exp-divider-line"></div>
+        <span class="exp-divider-text">or</span>
+        <div class="exp-divider-line"></div>
+      </div>
+
+      <%# 2. Refresh Status %>
+      <button type="button" class="btn-refresh" id="refreshBtn">
+        <span class="spin-ring" id="refreshSpinner"></span>
+        <i class="bi bi-arrow-clockwise" id="refreshIcon"></i>
+        Check Subscription Status
+      </button>
+      <p class="refresh-msg" id="refreshMsg">Already renewed? Click above to refresh.</p>
+
+      <%# 3. Logout %>
+      <a href="/logout" class="btn-logout">
+        <i class="bi bi-box-arrow-right"></i>
+        Sign out of this account
+      </a>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    /* ── Page entrance ── */
+    gsap.set('#expCard', { opacity: 0, y: 32, scale: 0.97 });
+    gsap.to('#expCard', { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'back.out(1.4)', delay: 0.1 });
+
+    /* ── Icon pulse ── */
+    gsap.to('#expIcon', {
+      boxShadow: '0 0 32px rgba(244,63,94,0.45)',
+      duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut',
+    });
+
+    /* ── WhatsApp button hover ── */
+    document.getElementById('waBtn').addEventListener('mouseenter', () => gsap.to('#waBtn', { scale: 1.02, duration: 0.15 }));
+    document.getElementById('waBtn').addEventListener('mouseleave', () => gsap.to('#waBtn', { scale: 1,    duration: 0.15 }));
+
+    /* ── Refresh Status ── */
+    document.getElementById('refreshBtn').addEventListener('click', async function () {
+      const btn     = this;
+      const spinner = document.getElementById('refreshSpinner');
+      const icon    = document.getElementById('refreshIcon');
+      const msg     = document.getElementById('refreshMsg');
+
+      btn.disabled        = true;
+      spinner.style.display = 'inline-block';
+      icon.style.display    = 'none';
+      msg.textContent       = 'Checking your subscription status…';
+      msg.className         = 'refresh-msg';
+
+      gsap.to(btn, { scale: 0.97, duration: 0.1 });
+
+      try {
+        const res  = await fetch('/api/check-status', {
+          headers: { 'Accept': 'application/json' },
+          signal:  AbortSignal.timeout(10000),
+        });
+        const data = await res.json();
+
+        if (data.status === 'active' || data.status === 'trial' || data.status === 'lifetime') {
+          msg.textContent = '✓ Subscription active! Redirecting to your dashboard…';
+          msg.className   = 'refresh-msg ok';
+          gsap.to('#expCard', {
+            opacity: 0, scale: 0.96, duration: 0.35, ease: 'power2.in', delay: 0.6,
+            onComplete: () => { window.location.href = '/dashboard'; },
+          });
+        } else if (data.status === 'pending') {
+          msg.textContent = 'Your account is pending activation. Contact support.';
+          msg.className   = 'refresh-msg fail';
+          gsap.to(btn, { scale: 1, duration: 0.1 });
+          btn.disabled = false;
+        } else {
+          msg.textContent = 'Still expired. Please contact support to renew.';
+          msg.className   = 'refresh-msg fail';
+          gsap.to('#expCard', { x: [-6, 6, -4, 4, 0], duration: 0.4, ease: 'none' });
+          btn.disabled = false;
+        }
+      } catch (err) {
+        msg.textContent = 'Connection error. Please try again.';
+        msg.className   = 'refresh-msg fail';
+        btn.disabled    = false;
+      } finally {
+        spinner.style.display = 'none';
+        icon.style.display    = '';
+        gsap.to(btn, { scale: 1, duration: 0.1 });
+      }
+    });
+  </script>
+</body>
+</html>
