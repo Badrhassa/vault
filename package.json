@@ -1,7 +1,7 @@
 {
   "name": "vaultixpos",
   "version": "1.0.0",
-  "description": "> Multi-tenant SaaS Micro-POS & Inventory Management   > **Stack:** Node.js · Express · EJS · PostgreSQL · Bootstrap 5 RTL · GSAP 3",
+  "description": "> Multi-tenant SaaS Micro-POS & Inventory Management",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -15,7 +15,8 @@
     "bcrypt": "^6.0.0",
     "connect-pg-simple": "^10.0.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
     "express-session": "^1.19.0",
     "multer": "^2.2.0",
     "pg": "^8.22.0"
