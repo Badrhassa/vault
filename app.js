@@ -122,16 +122,16 @@ app.listen(PORT, () => {
   ════════════════════════════════════════ */
 
   /* Run once immediately on startup to catch any missed during downtime */
-  // runOverdueEnforcement()
-  //   .then(() => console.log('  ✓  Startup overdue enforcement complete\n'))
+  //  runOverdueEnforcement()
+  //  .then(() => console.log('  ✓  Startup overdue enforcement complete\n'))
   //   .catch(err => console.error('  ✗  Startup enforcement error:', err.message));
 
-  // /* Then repeat every 30 minutes */
-  // const THIRTY_MIN = 30 * 60 * 1000;
-  // setInterval(async () => {
+  //  /* Then repeat every 30 minutes */
+  //  const THIRTY_MIN = 30 * 60 * 1000;
+  //  setInterval(async () => {
   //   console.log(`[BILLING] Running scheduled overdue enforcement — ${new Date().toISOString()}`);
-  //   await runOverdueEnforcement();
-  // }, THIRTY_MIN);
+  //    await runOverdueEnforcement();
+  //  }, THIRTY_MIN);
 });
 
 module.exports = app;

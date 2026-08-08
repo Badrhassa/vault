@@ -114,8 +114,9 @@ router.post('/stores/:id/record-payment', async (req, res) => {
 
   const days = parseInt(daysToAdd, 10) || 30;
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
 
     /* Insert payment record */
@@ -157,11 +158,11 @@ router.post('/stores/:id/record-payment', async (req, res) => {
     res.json({ success: true, store: rows[0], message: `Payment recorded. Subscription extended by ${days} days.` });
 
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('[POST /admin/stores/:id/record-payment]', err.message);
     res.status(500).json({ success: false, message: 'Failed to record payment.' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 

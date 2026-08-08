@@ -26,12 +26,8 @@ router.get('/login', (req, res) => {
    POST /login
    Body: { email, password }
 ════════════════════════════════════════ */
-/* ════════════════════════════════════════
-   POST /login
-════════════════════════════════════════ */
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  console.log(email)
   if (!email || !password) {
     if (req.xhr || req.headers.accept?.includes('json')) {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
