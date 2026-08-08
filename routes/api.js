@@ -12,7 +12,12 @@ const multer  = require('multer');
 const pool    = require('../db/pool');
 const checkSubscription    = require('../middleware/checkSubscription');
 const { requireAuth }      = require('../middleware/auth');
-
+/* Product limit per subscription plan */
+const PLAN_PRODUCT_LIMITS = {
+  basic:      200,
+  premium:    Infinity,
+  enterprise: Infinity,
+};
 const router = express.Router();
 
 /* ════════════════════════════════════════
@@ -127,6 +132,28 @@ router.post('/products', uploadProductImage, async (req, res) => {
   if (!name?.trim())                          return fail(400, 'Product name is required.');
   if (isNaN(parsedPrice) || parsedPrice < 0)  return fail(400, 'Price must be a non-negative number.');
   if (isNaN(parsedStock) || parsedStock < 0)  return fail(400, 'Stock must be a non-negative integer.');
+
+  /* ── Enforce product limit based on subscription plan ── */
+  try {
+    const storeRes = await pool.query(
+      'SELECT subscription_plan FROM stores WHERE id = $1 LIMIT 1',
+      [storeId]
+    );
+    const plan  = storeRes.rows[0]?.subscription_plan || 'basic';
+    const limit = PLAN_PRODUCT_LIMITS[plan] ?? PLAN_PRODUCT_LIMITS.basic;
+
+    if (limit !== Infinity) {
+      const countRes = await pool.query(
+        'SELECT COUNT(*)::int AS count FROM products WHERE store_id = $1',
+        [storeId]
+      );
+      if (countRes.rows[0].count >= limit) {
+        return fail(403, `وصلت للحد الأقصى لعدد المنتجات في خطتك (${limit}). رقّي خطتك عشان تضيف أكتر.`);
+      }
+    }
+  } catch (err) {
+    return fail(500, 'Failed to verify plan limits.');
+  }
 
   const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
 

@@ -11,6 +11,12 @@ const bcrypt  = require('bcrypt');
 const pool    = require('../db/pool');
 const { requireAuth }  = require('../middleware/auth');
 const checkSubscription = require('../middleware/checkSubscription');
+/* Employee limit per subscription plan */
+const PLAN_EMPLOYEE_LIMITS = {
+  basic:      5,
+  premium:    10,
+  enterprise: Infinity,
+};
 
 const router = express.Router();
 router.use(requireAuth, checkSubscription);
@@ -63,6 +69,27 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ success: false, message: 'البيزق أرقام فقط (4–6 أرقام).' });
 
   try {
+    /* ── Enforce employee limit based on subscription plan ── */
+    const storeRes = await pool.query(
+      'SELECT subscription_plan FROM stores WHERE id = $1 LIMIT 1',
+      [storeId]
+    );
+    const plan  = storeRes.rows[0]?.subscription_plan || 'basic';
+    const limit = PLAN_EMPLOYEE_LIMITS[plan] ?? PLAN_EMPLOYEE_LIMITS.basic;
+
+    if (limit !== Infinity) {
+      const countRes = await pool.query(
+        'SELECT COUNT(*)::int AS count FROM employees WHERE store_id = $1',
+        [storeId]
+      );
+      if (countRes.rows[0].count >= limit) {
+        return res.status(403).json({
+          success: false,
+          message: `وصلت للحد الأقصى لعدد الموظفين في خطتك (${limit}). رقّي خطتك عشان تضيف أكتر.`,
+        });
+      }
+    }
+
     /* Check duplicate employee_num within this store */
     const dupe = await pool.query(
       'SELECT id FROM employees WHERE store_id = $1 AND employee_num = $2 LIMIT 1',
