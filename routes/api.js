@@ -6,9 +6,9 @@
  */
 
 const express = require('express');
-const fs      = require('fs');
 const path    = require('path');
 const multer  = require('multer');
+const { put, del } = require('@vercel/blob');
 const pool    = require('../db/pool');
 const checkSubscription    = require('../middleware/checkSubscription');
 const { requireAuth }      = require('../middleware/auth');
@@ -22,23 +22,18 @@ const router = express.Router();
 
 /* ════════════════════════════════════════
    PRODUCT IMAGE UPLOADS
-   Saved to public/uploads/products, served
-   statically at /uploads/products/<file>.
+   Vercel's filesystem is read-only outside /tmp
+   (and /tmp doesn't persist between invocations),
+   so images are held in memory by multer, then
+   streamed to Vercel Blob storage. image_url now
+   stores the full https:// Blob URL, not a local
+   /uploads/... path.
 ════════════════════════════════════════ */
-const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'products');
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
 const ALLOWED_IMAGE_EXT  = /\.(jpe?g|png|webp|gif)$/i;
 const ALLOWED_IMAGE_MIME = /^image\/(jpeg|png|webp|gif)$/;
 
 const productImageUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-    filename: (req, file, cb) => {
-      const ext = ALLOWED_IMAGE_EXT.test(path.extname(file.originalname)) ? path.extname(file.originalname).toLowerCase() : '.jpg';
-      cb(null, `p_${req.session.storeId}_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 /* 5MB */ },
   fileFilter: (req, file, cb) => {
     if (ALLOWED_IMAGE_EXT.test(path.extname(file.originalname)) && ALLOWED_IMAGE_MIME.test(file.mimetype)) {
@@ -48,11 +43,27 @@ const productImageUpload = multer({
   },
 });
 
-/* Deletes a previously-uploaded product image file (best-effort, ignores errors). */
-function deleteProductImageFile(imageUrl) {
-  if (!imageUrl || !imageUrl.startsWith('/uploads/products/')) return;
-  const filePath = path.join(__dirname, '..', 'public', imageUrl);
-  fs.unlink(filePath, () => {});
+/* Uploads a file buffer to Vercel Blob and returns its public URL. */
+async function uploadToBlob(file, storeId) {
+  const ext = ALLOWED_IMAGE_EXT.test(path.extname(file.originalname))
+    ? path.extname(file.originalname).toLowerCase()
+    : '.jpg';
+  const filename = `products/p_${storeId}_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
+  const blob = await put(filename, file.buffer, {
+    access: 'public',
+    contentType: file.mimetype,
+  });
+  return blob.url;
+}
+
+/* Deletes a previously-uploaded Blob image (best-effort, ignores errors). */
+async function deleteProductImageFile(imageUrl) {
+  if (!imageUrl) return;
+  try {
+    await del(imageUrl);
+  } catch (err) {
+    console.error('[deleteProductImageFile]', err.message);
+  }
 }
 
 /* Wraps multer's single-image upload so validation/size errors come back
@@ -124,10 +135,7 @@ router.post('/products', uploadProductImage, async (req, res) => {
   const parsedPrice = parseFloat(price);
   const parsedStock = parseInt(stock, 10);
 
-  const fail = (status, message) => {
-    if (req.file) deleteProductImageFile(`/uploads/products/${req.file.filename}`);
-    return res.status(status).json({ success: false, message });
-  };
+  const fail = (status, message) => res.status(status).json({ success: false, message });
 
   if (!name?.trim())                          return fail(400, 'Product name is required.');
   if (isNaN(parsedPrice) || parsedPrice < 0)  return fail(400, 'Price must be a non-negative number.');
@@ -155,7 +163,16 @@ router.post('/products', uploadProductImage, async (req, res) => {
     return fail(500, 'Failed to verify plan limits.');
   }
 
-  const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
+  /* Upload image to Blob storage (if provided) before inserting */
+  let imageUrl = null;
+  if (req.file) {
+    try {
+      imageUrl = await uploadToBlob(req.file, storeId);
+    } catch (err) {
+      console.error('[POST /api/products] blob upload failed:', err.message);
+      return fail(500, 'Failed to upload image.');
+    }
+  }
 
   try {
     const { rows } = await pool.query(
@@ -186,9 +203,15 @@ router.patch('/products/:id', uploadProductImage, async (req, res) => {
   if (category !== undefined) { fields.push(`category = $${i++}`); values.push(category?.trim() || null); }
   if (sku      !== undefined) { fields.push(`sku      = $${i++}`); values.push(sku?.trim() || null); }
 
+  /* Upload new image to Blob storage before touching the DB */
   let newImageUrl;
   if (req.file) {
-    newImageUrl = `/uploads/products/${req.file.filename}`;
+    try {
+      newImageUrl = await uploadToBlob(req.file, storeId);
+    } catch (err) {
+      console.error('[PATCH /api/products/:id] blob upload failed:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to upload image.' });
+    }
     fields.push(`image_url = $${i++}`); values.push(newImageUrl);
   } else if (removeImage === 'true') {
     newImageUrl = null;
@@ -196,7 +219,7 @@ router.patch('/products/:id', uploadProductImage, async (req, res) => {
   }
 
   if (!fields.length) {
-    if (req.file) deleteProductImageFile(newImageUrl);
+    if (newImageUrl) deleteProductImageFile(newImageUrl);
     return res.status(400).json({ success: false, message: 'No fields provided for update.' });
   }
 
@@ -215,7 +238,7 @@ router.patch('/products/:id', uploadProductImage, async (req, res) => {
       values
     );
     if (!updated.length) {
-      if (req.file) deleteProductImageFile(newImageUrl);
+      if (req.file && newImageUrl) deleteProductImageFile(newImageUrl);
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
@@ -224,7 +247,7 @@ router.patch('/products/:id', uploadProductImage, async (req, res) => {
 
     res.json({ success: true, product: updated[0] });
   } catch (err) {
-    if (req.file) deleteProductImageFile(newImageUrl);
+    if (req.file && newImageUrl) deleteProductImageFile(newImageUrl);
     res.status(500).json({ success: false, message: 'Failed to update product.' });
   }
 });
@@ -239,7 +262,7 @@ router.delete('/products/:id', async (req, res) => {
       [req.params.id, req.session.storeId]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: 'Product not found.' });
-    if (rows[0].image_url) deleteProductImageFile(rows[0].image_url);
+    if (rows[0].image_url) await deleteProductImageFile(rows[0].image_url);
     res.json({ success: true, message: 'Product deleted.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to delete product.' });
