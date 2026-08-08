@@ -139,7 +139,7 @@ router.post('/stores/:id/record-payment', async (req, res) => {
 
     /* Update store: mark paid, extend subscription, set active if was expired/pending */
     const currentStatus = sedResult.rows[0].status;
-    const newStatus     = ['expired', 'pending', 'overdue'].includes(currentStatus) ? 'active' : currentStatus;
+    const newStatus     = ['expired', 'pending'].includes(currentStatus) ? 'active' : currentStatus;
 
     const { rows } = await client.query(
       `UPDATE stores
