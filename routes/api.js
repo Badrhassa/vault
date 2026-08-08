@@ -14,8 +14,8 @@ const checkSubscription    = require('../middleware/checkSubscription');
 const { requireAuth }      = require('../middleware/auth');
 /* Product limit per subscription plan */
 const PLAN_PRODUCT_LIMITS = {
-  basic:      200,
-  premium:    Infinity,
+  basic:      250,
+  premium:    1500,
   enterprise: Infinity,
 };
 const router = express.Router();

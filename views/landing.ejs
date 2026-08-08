@@ -181,7 +181,7 @@
       من أي مكان وفي أي وقت.
     </p>
     <div class="hero-stats" id="heroStats">
-      <div class="h-stat"><span class="val">+500</span><span class="lbl">متجر نشط</span></div>
+      
       <div class="h-stat"><span class="val">99.9%</span><span class="lbl">وقت التشغيل</span></div>
       <div class="h-stat"><span class="val">24/7</span><span class="lbl">دعم على واتساب</span></div>
     </div>
@@ -202,25 +202,25 @@
         <div class="p-plan-name">Basic · الأساسي</div>
         <div class="p-price">
           <span class="currency">ج</span>
-          <span class="amount">200</span>
+          <span class="amount">250</span>
           <span class="period">/ شهر</span>
         </div>
-        <div class="p-price-note">مثالي للمتاجر الصغيرة والأفراد</div>
+        <div class="p-price-note">أو 2,500 ج سنويًا — للمتاجر والأنشطة الفردية الصغرى</div>
 
         <div class="p-divider"></div>
 
         <ul class="p-features">
-          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تسجيل المبيعات بدون حدود</li>
-          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إدارة المخزون (حتى 200 منتج)</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> حتى 250 منتج</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> كاشير واحد فقط (مالك المحل)</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> حتى 1,000 فاتورة شهريًا</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تقارير يومية وطباعة</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تنبيهات المخزون المنخفض</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إضافة التصنيفات والباركود</li>
-          <li><i class="bi bi-x-circle-fill fi fi-no"></i> إضافة كاشيرين / موظفين</li>
-          <li><i class="bi bi-x-circle-fill fi fi-no"></i> تتبع مبيعات كل موظف</li>
-          <li><i class="bi bi-x-circle-fill fi fi-no"></i> دخول الموظفين برقم + بيزق</li>
+          <li><i class="bi bi-x-circle-fill fi fi-no"></i> إضافة كاشيرين / موظفين إضافيين</li>
+          <li><i class="bi bi-x-circle-fill fi fi-no"></i> فواتير غير محدودة</li>
         </ul>
 
-        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Basic بـ 200 جنيه في VaultixPOS. اسمي: ') %>"
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Basic بـ 250 جنيه في VaultixPOS. اسمي: ') %>"
            target="_blank" rel="noopener noreferrer"
            class="btn-wa-plan outline"
            onclick="trackPlan('Basic')">
@@ -236,17 +236,17 @@
         <div class="p-plan-name">Premium · بريميم</div>
         <div class="p-price">
           <span class="currency">ج</span>
-          <span class="amount">400</span>
+          <span class="amount">500</span>
           <span class="period">/ شهر</span>
         </div>
-        <div class="p-price-note">للمتاجر التي لديها موظفين وكاشيرين</div>
+        <div class="p-price-note">أو 5,000 ج سنويًا — للمحلات المتوسطة اللي عندها شفتات وكاشيرين</div>
 
         <div class="p-divider"></div>
 
         <ul class="p-features">
-          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> كل مميزات Basic بدون حدود</li>
-          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> مخزون غير محدود</li>
-          <li><i class="bi bi-star-fill fi fi-star"></i> إضافة كاشيرين وموظفين (حتى 10)</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> حتى 1,500 منتج</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> حتى 3 كاشيرين / موظفين برقم PIN</li>
+          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> فواتير غير محدودة</li>
           <li><i class="bi bi-star-fill fi fi-star"></i> دخول الموظف برقم + بيزق (PIN)</li>
           <li><i class="bi bi-star-fill fi fi-star"></i> كل موظف يشوف مبيعاته بس</li>
           <li><i class="bi bi-star-fill fi fi-star"></i> المالك يشوف مبيعات كل موظف</li>
@@ -254,7 +254,7 @@
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إشعارات فورية للمخزون</li>
         </ul>
 
-        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Premium بـ 400 جنيه في VaultixPOS. اسمي: ') %>"
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الاشتراك في باقة Premium بـ 500 جنيه في VaultixPOS. اسمي: ') %>"
            target="_blank" rel="noopener noreferrer"
            class="btn-wa-plan"
            onclick="trackPlan('Premium')">
@@ -266,28 +266,28 @@
       <%# ── Enterprise Card ── %>
       <div class="p-card enterprise" id="cardEnterprise">
         <div class="p-plan-icon"><i class="bi bi-building-fill"></i></div>
-        <div class="p-plan-name">Enterprise · الاحترافي</div>
+        <div class="p-plan-name">Enterprise · الشركات والمنشآت</div>
         <div class="p-price">
-          <span class="currency">ج</span>
-          <span class="amount">2000</span>
-          <span class="period">دفعة واحدة</span>
+          <span class="currency">يبدأ من ج</span>
+          <span class="amount">1000</span>
+          <span class="period">/ شهر</span>
         </div>
-        <div class="p-price-note">حساب دائم — لا اشتراكات شهرية</div>
+        <div class="p-price-note">أو 10,000 ج سنويًا — للسوبر ماركت الكبيرة ومحلات الجملة</div>
 
         <div class="p-divider"></div>
 
         <ul class="p-features">
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> كل مميزات Premium</li>
-          <li><i class="bi bi-infinity fi fi-star"></i> وصول مدى الحياة (Lifetime)</li>
-          <li><i class="bi bi-infinity fi fi-star"></i> موظفين غير محدودين</li>
+          <li><i class="bi bi-infinity fi fi-star"></i> منتجات غير محدودة</li>
+          <li><i class="bi bi-infinity fi fi-star"></i> عدد كاشيرين وموظفين غير محدود</li>
+          <li><i class="bi bi-star-fill fi fi-star"></i> قاعدة بيانات مخصصة أو مساحة معزولة</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> إعداد وتخصيص مجاني</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> أولوية في الدعم الفني</li>
-          <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تحديثات مجانية للأبد</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> تدريب مجاني على الاستخدام</li>
           <li><i class="bi bi-check-circle-fill fi fi-yes"></i> دعم واتساب مباشر 24/7</li>
         </ul>
 
-        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الحصول على حساب Enterprise الاحترافي بـ 2000 جنيه في VaultixPOS. اسمي: ') %>"
+        <a href="https://wa.me/201021761285?text=<%= encodeURIComponent('مرحباً، أريد الحصول على باقة Enterprise / Custom في VaultixPOS. اسمي: ') %>"
            target="_blank" rel="noopener noreferrer"
            class="btn-wa-plan"
            style="background:linear-gradient(135deg,var(--amber),#C47D00);box-shadow:0 4px 18px rgba(245,166,35,.35)"

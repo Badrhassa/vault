@@ -13,8 +13,8 @@ const { requireAuth }  = require('../middleware/auth');
 const checkSubscription = require('../middleware/checkSubscription');
 /* Employee limit per subscription plan */
 const PLAN_EMPLOYEE_LIMITS = {
-  basic:      5,
-  premium:    10,
+  basic:      1,
+  premium:    3,
   enterprise: Infinity,
 };
 
