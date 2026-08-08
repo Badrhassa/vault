@@ -565,15 +565,6 @@
         </div>
         <div class="modal-body">
           <form id="addProductForm" novalidate autocomplete="off">
-            <div class="img-upload-box">
-              <div class="img-upload-preview" id="apImgPreview"><i class="bi bi-image"></i></div>
-              <div class="img-upload-actions">
-                <label class="btn-upload-pick" for="apImage"><i class="bi bi-upload"></i> Upload Photo</label>
-                <button type="button" class="btn-upload-clear" id="apImgClear" style="display:none">Remove photo</button>
-                <span class="img-upload-hint">JPG, PNG, WEBP — up to 5MB</span>
-              </div>
-              <input type="file" id="apImage" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
-            </div>
             <div class="mf"><label>Product Name *</label><input type="text" id="apName" placeholder="e.g. Basmati Rice 5kg" required /></div>
             <div class="row g-2">
               <div class="col-6"><div class="mf"><label>Unit Price ($) *</label><input type="number" id="apPrice" placeholder="0.00" min="0" step="0.01" required /></div></div>
@@ -606,15 +597,6 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="epId" />
-          <div class="img-upload-box">
-            <div class="img-upload-preview" id="epImgPreview"><i class="bi bi-image"></i></div>
-            <div class="img-upload-actions">
-              <label class="btn-upload-pick" for="epImage"><i class="bi bi-upload"></i> Change Photo</label>
-              <button type="button" class="btn-upload-clear" id="epImgClear" style="display:none">Remove photo</button>
-              <span class="img-upload-hint">JPG, PNG, WEBP — up to 5MB</span>
-            </div>
-            <input type="file" id="epImage" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
-          </div>
           <div class="mf"><label>Product Name *</label><input type="text" id="epName" required /></div>
           <div class="row g-2">
             <div class="col-6"><div class="mf"><label>Unit Price ($)</label><input type="number" id="epPrice" min="0" step="0.01" /></div></div>
@@ -975,35 +957,8 @@
   /* ════════════════════════════════════════
      ADD PRODUCT
   ════════════════════════════════════════ */
-  let apImageFile = null;
-  function resetImagePicker(prefix){
-    const preview=document.getElementById(prefix+'ImgPreview');
-    const clearBtn=document.getElementById(prefix+'ImgClear');
-    preview.innerHTML='<i class="bi bi-image"></i>';
-    clearBtn.style.display='none';
-  }
-  document.getElementById('apImage').addEventListener('change', function(e){
-    const file=e.target.files[0];
-    if(!file) return;
-    if(file.size>5*1024*1024){ showToast('Image must be under 5MB.','error'); this.value=''; return; }
-    apImageFile=file;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      document.getElementById('apImgPreview').innerHTML=`<img src="${ev.target.result}" alt="" />`;
-      document.getElementById('apImgClear').style.display='block';
-    };
-    reader.readAsDataURL(file);
-  });
-  document.getElementById('apImgClear').addEventListener('click', function(){
-    apImageFile=null;
-    document.getElementById('apImage').value='';
-    resetImagePicker('ap');
-  });
-
   document.getElementById('addProductModal').addEventListener('hidden.bs.modal',()=>{
     document.getElementById('addProductForm').reset();
-    apImageFile=null;
-    resetImagePicker('ap');
   });
 
   document.getElementById('addProdBtn').addEventListener('click', async function() {
@@ -1017,14 +972,12 @@
     if(isNaN(stock)||stock<0){ showToast('Enter a valid stock quantity.','error'); return; }
     setLoading('addProdBtn','apSpin','apBtnTxt',true);
     try {
-      const fd=new FormData();
-      fd.append('name',name);
-      fd.append('price',price);
-      fd.append('stock',stock);
-      if(cat) fd.append('category',cat);
-      if(sku) fd.append('sku',sku);
-      if(apImageFile) fd.append('image',apImageFile);
-      const res=await fetch('/api/products',{ method:'POST', headers:{'Accept':'application/json'}, body:fd, signal:AbortSignal.timeout(20000) });
+      const res=await fetch('/api/products',{
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body:JSON.stringify({ name, price, stock, category: cat || undefined, sku: sku || undefined }),
+        signal:AbortSignal.timeout(20000),
+      });
       const data=await res.json();
       if(res.ok&&data.success){
         bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
@@ -1073,26 +1026,6 @@
   /* ════════════════════════════════════════
      EDIT PRODUCT
   ════════════════════════════════════════ */
-  let epImageFile = null;
-  let epRemoveImage = false;
-  document.getElementById('epImage').addEventListener('change', function(e){
-    const file=e.target.files[0];
-    if(!file) return;
-    if(file.size>5*1024*1024){ showToast('Image must be under 5MB.','error'); this.value=''; return; }
-    epImageFile=file; epRemoveImage=false;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      document.getElementById('epImgPreview').innerHTML=`<img src="${ev.target.result}" alt="" />`;
-      document.getElementById('epImgClear').style.display='block';
-    };
-    reader.readAsDataURL(file);
-  });
-  document.getElementById('epImgClear').addEventListener('click', function(){
-    epImageFile=null; epRemoveImage=true;
-    document.getElementById('epImage').value='';
-    resetImagePicker('ep');
-  });
-
   function openEditModal(btn) {
     document.getElementById('epId').value       = btn.dataset.id;
     document.getElementById('epName').value     = btn.dataset.name;
@@ -1100,14 +1033,6 @@
     document.getElementById('epStock').value    = btn.dataset.stock;
     document.getElementById('epCategory').value = btn.dataset.category||'';
     document.getElementById('epSku').value      = btn.dataset.sku||'';
-    epImageFile=null; epRemoveImage=false;
-    document.getElementById('epImage').value='';
-    if(btn.dataset.image){
-      document.getElementById('epImgPreview').innerHTML=`<img src="${btn.dataset.image}" alt="" />`;
-      document.getElementById('epImgClear').style.display='block';
-    } else {
-      resetImagePicker('ep');
-    }
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editProductModal')).show();
   }
 
@@ -1121,15 +1046,12 @@
     if(!name){ showToast('Product name is required.','error'); return; }
     setLoading('editProdBtn','epSpin','epBtnTxt',true);
     try {
-      const fd=new FormData();
-      fd.append('name',name);
-      fd.append('price',price);
-      fd.append('stock',stock);
-      fd.append('category',cat||'');
-      fd.append('sku',sku||'');
-      if(epImageFile) fd.append('image',epImageFile);
-      if(epRemoveImage) fd.append('removeImage','true');
-      const res=await fetch('/api/products/'+id,{ method:'PATCH', headers:{'Accept':'application/json'}, body:fd, signal:AbortSignal.timeout(20000) });
+      const res=await fetch('/api/products/'+id,{
+        method:'PATCH',
+        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body:JSON.stringify({ name, price, stock, category: cat, sku: sku }),
+        signal:AbortSignal.timeout(20000),
+      });
       const data=await res.json();
       if(res.ok&&data.success){
         bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
@@ -1140,12 +1062,9 @@
           row.querySelector('.td-sku').textContent=sku||'—';
           const catCell=row.querySelector('.td-cat');
           catCell.innerHTML=cat?`<span class="cat-chip">${esc(cat)}</span>`:'<span style="color:var(--text-muted)">—</span>';
-          const photoCell=row.querySelector('.td-photo');
-          const newImg=data.product.image_url;
-          photoCell.innerHTML=newImg?`<img src="${esc(newImg)}" alt="" class="prod-thumb" />`:'<div class="prod-thumb-ph"><i class="bi bi-image"></i></div>';
           updateStockDOM(id,parseInt(stock));
           /* Update data attrs on action buttons */
-          row.querySelectorAll('[data-id]').forEach(b=>{ b.dataset.name=name; b.dataset.price=parseFloat(price); b.dataset.stock=parseInt(stock); b.dataset.category=cat; b.dataset.sku=sku; b.dataset.image=newImg||''; });
+          row.querySelectorAll('[data-id]').forEach(b=>{ b.dataset.name=name; b.dataset.price=parseFloat(price); b.dataset.stock=parseInt(stock); b.dataset.category=cat; b.dataset.sku=sku; });
           gsap.fromTo(row,{backgroundColor:'rgba(245,166,35,.1)'},{backgroundColor:'rgba(0,0,0,0)',duration:.8,ease:'power2.out'});
         }
         showToast('"'+esc(name)+'" updated successfully.','success');
