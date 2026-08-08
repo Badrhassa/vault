@@ -108,7 +108,8 @@ app.use((err, req, res, _next) => {
 /* ════════════════════════════════════════
    START
 ════════════════════════════════════════ */
-const PORT = process.env.PORT || 3000;
+console.log('Database URL exists?', !!process.env.POSTGRES_DATABASE_POSTGRES_URL);
+const PORT = process.env.PORT ;
 app.listen(PORT, () => {
   console.log(`\n  ⚡  VaultixPOS v4  →  http://localhost:${PORT}`);
   console.log(`  ENV: ${process.env.NODE_ENV || 'development'}\n`);

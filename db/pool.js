@@ -2,12 +2,16 @@
 
 const { Pool } = require('pg');
 
-// التحقق مما إذا كان رابط الداتا بيز خارجي يحتاج SSL
-const isRemoteDb = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost');
+// استخدام المتغير المحدد في Vercel مباشرة
+const connectionString = process.env.POSTGRES_DATABASE_POSTGRES_URL || process.env.POSTGRES_URL;
+
+console.log('[DB CONNECTING TO]:', connectionString ? connectionString.split('@')[1] : 'NOT FOUND');
+
+const isLocal = connectionString && (connectionString.includes('localhost') || connectionString.includes('127.0.0.1'));
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: isRemoteDb ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
